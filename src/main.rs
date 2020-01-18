@@ -1,6 +1,7 @@
 mod config;
 mod resource;
 mod utility;
+mod keybindings;
 
 use resource::ResourceManager;
 use utility::Result;

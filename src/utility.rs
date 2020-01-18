@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::path::{PathBuf};
+use std::path::PathBuf;
 
 pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
