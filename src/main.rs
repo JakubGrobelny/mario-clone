@@ -1,18 +1,31 @@
-extern crate sdl2;
+mod config;
+mod resource;
+mod utility;
 
+use resource::ResourceManager;
+use utility::Result;
+
+extern crate sdl2;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
+
 use std::time::Duration;
 
 const FPS: u32 = 60;
 
-fn main() -> Result<(), String> {
+fn main() -> Result<()> {
     let context = sdl2::init()?;
     let video = context.video()?;
 
+    let resources = ResourceManager::new()?;
+
     let window = video
-        .window("mario game", 640, 480)
+        .window(
+            "mario game",
+            resources.config().window_width(),
+            resources.config().window_height(),
+        )
         .position_centered()
         .resizable()
         .build()
