@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use crate::config::Config;
-use crate::utility::Result;
+use crate::utility::{Result, get_base_path};
 
 
 pub struct ResourceManager {
@@ -11,12 +11,12 @@ pub struct ResourceManager {
 
 impl ResourceManager {
     pub fn new() -> Result<ResourceManager> {
-        let res_path = Path::new("./resources/").canonicalize()?;
+        let res_path = get_base_path()?.join("resources/");
         let config = Config::new(&res_path.as_path())?;
 
         Ok(ResourceManager {
-            res_path: res_path,
-            config: config,
+            res_path,
+            config,
         })
     }
 
