@@ -17,15 +17,14 @@ fn default_window_width() -> u32 {
     1280
 }
 
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     #[serde(default = "default_window_height")]
     window_height: u32,
     #[serde(default = "default_window_width")]
     window_width: u32,
-    #[serde(default = "default_keybindings")]
-    keybindings: KeyBindings,
+    #[serde(default = "default_key_bindings")]
+    key_bindings: KeyBindings,
 }
 
 impl Config {

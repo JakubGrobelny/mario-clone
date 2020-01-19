@@ -4,6 +4,13 @@ use serde::{Deserialize, Serialize};
 extern crate sdl2;
 use sdl2::keyboard::Keycode;
 
+#[derive(Debug, Copy, Clone)]
+pub enum ButtonState {
+    Active,
+    Inactive,
+    Pressed
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct KeyBindings {
     jump: i32,
@@ -14,7 +21,7 @@ pub struct KeyBindings {
     sprint: i32,
 }
 
-pub fn default_keybindings() -> KeyBindings {
+pub fn default_key_bindings() -> KeyBindings {
     KeyBindings {
         jump: Keycode::Space as i32,
         crouch: Keycode::LCtrl as i32,

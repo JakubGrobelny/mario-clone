@@ -2,8 +2,16 @@ mod config;
 mod resource;
 mod utility;
 mod keybindings;
+mod controller;
+mod state;
+mod level;
+mod block;
+mod player;
+mod render;
+mod physics;
 
 use resource::ResourceManager;
+use controller::*;
 use utility::Result;
 
 extern crate sdl2;
@@ -34,10 +42,14 @@ fn main() -> Result<()> {
 
     let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
 
+    let mut controller = Controller::new();
+
     canvas.set_draw_color(Color::RGB(255, 255, 255));
     canvas.clear();
     canvas.present();
+    
     let mut event_pump = context.event_pump()?;
+    
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
