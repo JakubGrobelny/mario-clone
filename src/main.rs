@@ -9,10 +9,12 @@ mod block;
 mod player;
 mod render;
 mod physics;
+mod hitbox;
 
 use resource::ResourceManager;
 use controller::*;
 use utility::Result;
+use state::*;
 
 extern crate sdl2;
 use sdl2::event::Event;
@@ -28,6 +30,7 @@ fn main() -> Result<()> {
     let video = context.video()?;
 
     let resources = ResourceManager::new()?;
+    let game_state = GameState::new(&resources);
 
     let window = video
         .window(
@@ -36,7 +39,6 @@ fn main() -> Result<()> {
             resources.config().window_height(),
         )
         .position_centered()
-        .resizable()
         .build()
         .map_err(|e| e.to_string())?;
 

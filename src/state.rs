@@ -16,15 +16,15 @@ pub enum Activity {
     Menu,
 }
 
-pub struct GameState {
+pub struct GameState<'a> {
     should_exit: bool,
     controller: Controller,
-    resources: ResourceManager,
+    resources: &'a ResourceManager,
     activity: Activity,
 }
 
-impl GameState {
-    pub fn new(resources: ResourceManager) -> GameState {
+impl GameState<'_> {
+    pub fn new(resources: &ResourceManager) -> GameState {
         GameState {
             should_exit: false,
             controller: Controller::new(),
