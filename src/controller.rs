@@ -1,6 +1,6 @@
 use crate::keybindings::*;
 use sdl2::keyboard::Keycode;
-use sdl2::{event::Event, EventPump};
+use sdl2::{event::Event};
 
 enum KeyEventType {
     Down,
@@ -28,6 +28,7 @@ pub struct Controller {
 impl ButtonState {
     fn update(&mut self, event: KeyEventType) {
         use ButtonState::*;
+        use KeyEventType::*;
         match (&self, event) {
             (Active, Up) => *self = Inactive,
             (Inactive, Down) => *self = Pressed,
@@ -73,6 +74,13 @@ impl Controller {
                 self.update_key(KeyEventType::Up, *key, bindings);
             }
             _ => (),
+        }
+    }
+
+    pub fn active(&self, key: Key) -> bool {
+        match self.keys[key as usize] {
+            ButtonState::Active | ButtonState::Pressed => true,
+            _ => false,
         }
     }
 }

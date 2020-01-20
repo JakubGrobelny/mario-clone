@@ -3,8 +3,8 @@ use crate::level::*;
 use crate::player::*;
 use crate::render::*;
 use crate::resource::*;
+use crate::keybindings::*;
 
-use sdl2::keyboard::Keycode;
 use sdl2::{event::Event, EventPump};
 
 pub enum Activity {
@@ -54,5 +54,13 @@ impl GameState<'_> {
 
     pub fn update(&mut self, event_pump: &mut EventPump) {
         self.process_events(event_pump);
+
+        if self.controller.active(Key::Escape) {
+            self.should_exit = true;
+        }
+
+        if self.should_exit {
+            return;
+        }
     }
 }

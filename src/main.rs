@@ -12,15 +12,11 @@ mod physics;
 mod hitbox;
 
 use resource::ResourceManager;
-use controller::*;
 use utility::Result;
 use state::*;
 use render::*;
 
 extern crate sdl2;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
 
 use std::time::Duration;
 
