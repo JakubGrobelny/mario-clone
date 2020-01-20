@@ -1,13 +1,12 @@
-use crate::keybindings::*;
+use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-use sdl2::{event::Event};
 
 enum KeyEventType {
     Down,
     Up,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, std::cmp::PartialEq)]
 pub enum ButtonState {
     Active,
     Inactive,
@@ -22,8 +21,29 @@ pub struct Mouse {
 
 pub struct Controller {
     mouse: Mouse,
-    keys: [ButtonState; KEYS_COUNT],
+    up: ButtonState,
+    down: ButtonState,
+    left: ButtonState,
+    right: ButtonState,
+    escape: ButtonState,
+    sprint: ButtonState,
 }
+
+pub enum Key {
+    Up,
+    Down,
+    Left,
+    Right,
+    Escape,
+    Sprint,
+}
+
+const UP_KEY: Keycode = Keycode::Up;
+const DOWN_KEY: Keycode = Keycode::Down;
+const LEFT_KEY: Keycode = Keycode::Left;
+const RIGHT_KEY: Keycode = Keycode::Right;
+const ESCAPE_KEY: Keycode = Keycode::Escape;
+const SPRINT_KEY: Keycode = Keycode::LShift;
 
 impl ButtonState {
     fn update(&mut self, event: KeyEventType) {
@@ -34,7 +54,7 @@ impl ButtonState {
             (Inactive, Down) => *self = Pressed,
             (Pressed, Down) => *self = Active,
             (Pressed, Up) => *self = Inactive,
-            _ => ()
+            _ => (),
         }
     }
 }
@@ -43,44 +63,51 @@ impl Controller {
     pub fn new() -> Controller {
         Controller {
             mouse: Mouse::new(),
-            keys: [ButtonState::Inactive; KEYS_COUNT],
+            up: ButtonState::Inactive,
+            down: ButtonState::Inactive,
+            left: ButtonState::Inactive,
+            right: ButtonState::Inactive,
+            escape: ButtonState::Inactive,
+            sprint: ButtonState::Inactive,
         }
     }
 
-    fn update_key(
-        &mut self,
-        event: KeyEventType,
-        code: Keycode,
-        bindings: &KeyBindings<Keycode>,
-    ) {
-        for i in 0..KEYS_COUNT {
-            if code == bindings.bindings[i] {
-                self.keys[i].update(event);
-                return;
-            }
+    fn update_key(&mut self, event: KeyEventType, code: Keycode) {
+        match code {
+            UP_KEY => self.up.update(event),
+            DOWN_KEY => self.down.update(event),
+            LEFT_KEY => self.left.update(event),
+            RIGHT_KEY => self.right.update(event),
+            ESCAPE_KEY => self.escape.update(event),
+            SPRINT_KEY => self.sprint.update(event),
+            _ => (),
         }
     }
 
-    pub fn update(&mut self, event: &Event, bindings: &KeyBindings<Keycode>) {
+    pub fn update(&mut self, event: &Event) {
         match event {
             Event::KeyDown {
                 keycode: Some(key), ..
             } => {
-                self.update_key(KeyEventType::Down, *key, bindings);
+                self.update_key(KeyEventType::Down, *key);
             }
             Event::KeyUp {
                 keycode: Some(key), ..
             } => {
-                self.update_key(KeyEventType::Up, *key, bindings);
+                self.update_key(KeyEventType::Up, *key);
             }
             _ => (),
         }
     }
 
     pub fn active(&self, key: Key) -> bool {
-        match self.keys[key as usize] {
-            ButtonState::Active | ButtonState::Pressed => true,
-            _ => false,
+        match key {
+            Key::Down => self.down != ButtonState::Inactive,
+            Key::Right => self.right != ButtonState::Inactive,
+            Key::Up => self.up != ButtonState::Inactive,
+            Key::Left => self.left != ButtonState::Inactive,
+            Key::Sprint => self.sprint != ButtonState::Inactive,
+            Key::Escape => self.escape != ButtonState::Inactive,
         }
     }
 }

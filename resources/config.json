@@ -1,12 +1,4 @@
 {
     "window_height": 720,
-    "window_width": 1280,
-    "keybindings": {
-        "jump": 32,
-        "crouch": 1073742048,
-        "left": 1073741904,
-        "right": 1073741903,
-        "escape": 27,
-        "sprint": 1073742049
-    }
+    "window_width": 1280
 }

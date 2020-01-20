@@ -3,7 +3,6 @@ use crate::level::*;
 use crate::player::*;
 use crate::render::*;
 use crate::resource::*;
-use crate::keybindings::*;
 
 use sdl2::{event::Event, EventPump};
 
@@ -40,8 +39,7 @@ impl GameState<'_> {
         for event in event_pump.poll_iter() {
             match event {
                 Event::KeyDown { .. } | Event::KeyUp { .. } => {
-                    self.controller
-                        .update(&event, &self.resources.config().key_bindings);
+                    self.controller.update(&event);
                 }
                 Event::Quit { .. } => {
                     self.should_exit = true;

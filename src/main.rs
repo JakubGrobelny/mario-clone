@@ -1,7 +1,6 @@
 mod config;
 mod resource;
 mod utility;
-mod keybindings;
 mod controller;
 mod state;
 mod level;
@@ -46,6 +45,7 @@ fn main() -> Result<()> {
     
     'running: loop {
         game_state.update(&mut event_pump);
+    
         if game_state.should_exit {
             break 'running;
         }
