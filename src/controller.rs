@@ -1,72 +1,87 @@
 use crate::keybindings::*;
+use sdl2::keyboard::Keycode;
 use sdl2::{event::Event, EventPump};
 
+enum KeyEventType {
+    Down,
+    Up,
+}
 
-pub struct Movement([ButtonState; 4]);
+#[derive(Debug, Copy, Clone)]
+pub enum ButtonState {
+    Active,
+    Inactive,
+    Pressed,
+}
 
-const UP : usize = 0;
-const DOWN : usize = 1;
-const LEFT : usize = 2;
-const RIGHT : usize = 3;
-
+#[derive(Debug)]
 pub struct Mouse {
     pos: (i32, i32),
-    state: (ButtonState, ButtonState)
+    state: (ButtonState, ButtonState),
 }
 
 pub struct Controller {
-    movement: Movement,
     mouse: Mouse,
-    pause: ButtonState,
-    sprint: ButtonState,
+    keys: [ButtonState; KEYS_COUNT],
+}
+
+impl ButtonState {
+    fn update(&mut self, event: KeyEventType) {
+        use ButtonState::*;
+        match (&self, event) {
+            (Active, Up) => *self = Inactive,
+            (Inactive, Down) => *self = Pressed,
+            (Pressed, Down) => *self = Active,
+            (Pressed, Up) => *self = Inactive,
+            _ => ()
+        }
+    }
 }
 
 impl Controller {
     pub fn new() -> Controller {
         Controller {
-            movement: Movement::new(),
             mouse: Mouse::new(),
-            pause: ButtonState::Inactive,
-            sprint: ButtonState::Inactive,
+            keys: [ButtonState::Inactive; KEYS_COUNT],
         }
     }
 
+    fn update_key(
+        &mut self,
+        event: KeyEventType,
+        code: Keycode,
+        bindings: &KeyBindings<Keycode>,
+    ) {
+        for i in 0..KEYS_COUNT {
+            if code == bindings.bindings[i] {
+                self.keys[i].update(event);
+                return;
+            }
+        }
+    }
+
+    pub fn update(&mut self, event: &Event, bindings: &KeyBindings<Keycode>) {
+        match event {
+            Event::KeyDown {
+                keycode: Some(key), ..
+            } => {
+                self.update_key(KeyEventType::Down, *key, bindings);
+            }
+            Event::KeyUp {
+                keycode: Some(key), ..
+            } => {
+                self.update_key(KeyEventType::Up, *key, bindings);
+            }
+            _ => (),
+        }
+    }
 }
 
 impl Mouse {
     pub fn new() -> Mouse {
         Mouse {
             pos: (0, 0),
-                state: (ButtonState::Inactive, ButtonState::Inactive)
+            state: (ButtonState::Inactive, ButtonState::Inactive),
         }
-    }
-}
-
-impl Movement {
-    pub fn new() -> Movement {
-        Movement([ButtonState::Inactive; 4])
-    }
-
-    fn is_in_direction(&self, dir: usize) -> bool {
-        match self.0[dir] {
-            ButtonState::Inactive => false,
-            _ => true
-        }
-    }
-
-    pub fn is_up(&self) -> bool {
-        self.is_in_direction(UP)
-    }
-
-    pub fn is_down(&self) -> bool {
-        self.is_in_direction(DOWN)
-    }
-
-    pub fn is_left(&self) -> bool {
-        self.is_in_direction(LEFT)
-    }
-
-    pub fn is_right(&self) -> bool {
-        self.is_in_direction(RIGHT)
     }
 }

@@ -1,0 +1,6 @@
+max_width = 80
+fn_args_layout = "Tall"
+format_strings = true
+imports_layout = "HorizontalVertical"
+enum_discrim_align_threshold = 20
+struct_field_align_threshold = 20

@@ -15,6 +15,7 @@ use resource::ResourceManager;
 use controller::*;
 use utility::Result;
 use state::*;
+use render::*;
 
 extern crate sdl2;
 use sdl2::event::Event;
@@ -30,7 +31,7 @@ fn main() -> Result<()> {
     let video = context.video()?;
 
     let resources = ResourceManager::new()?;
-    let game_state = GameState::new(&resources);
+    let mut game_state = GameState::new(&resources);
 
     let window = video
         .window(
@@ -43,27 +44,14 @@ fn main() -> Result<()> {
         .map_err(|e| e.to_string())?;
 
     let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
+    clear_screen(&mut canvas, 100, 100, 255);
 
-    let mut controller = Controller::new();
-
-    canvas.set_draw_color(Color::RGB(255, 255, 255));
-    canvas.clear();
-    canvas.present();
-    
     let mut event_pump = context.event_pump()?;
     
     'running: loop {
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => {
-                    break 'running;
-                }
-                _ => (),
-            }
+        game_state.update(&mut event_pump);
+        if game_state.should_exit {
+            break 'running;
         }
 
         canvas.clear();
