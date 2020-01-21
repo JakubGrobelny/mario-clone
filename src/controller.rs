@@ -19,6 +19,7 @@ pub struct Mouse {
     state: (ButtonState, ButtonState),
 }
 
+#[derive(Debug)]
 pub struct Controller {
     mouse: Mouse,
     up: ButtonState,
