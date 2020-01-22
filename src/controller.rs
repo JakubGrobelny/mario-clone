@@ -1,4 +1,5 @@
 use sdl2::event::Event;
+use sdl2::event::EventPollIterator;
 use sdl2::keyboard::Keycode;
 
 enum KeyEventType {
@@ -22,34 +23,42 @@ pub struct Mouse {
 #[derive(Debug)]
 pub struct Controller {
     mouse: Mouse,
-    up: ButtonState,
-    down: ButtonState,
-    left: ButtonState,
-    right: ButtonState,
-    escape: ButtonState,
-    sprint: ButtonState,
+    keys: [ButtonState; KEY_NUM],
 }
 
+#[repr(usize)]
 pub enum Key {
-    Up,
+    Up = 0,
     Down,
     Left,
     Right,
     Escape,
     Sprint,
+
+    Invalid,
 }
 
-const UP_KEY: Keycode = Keycode::Up;
-const DOWN_KEY: Keycode = Keycode::Down;
-const LEFT_KEY: Keycode = Keycode::Left;
-const RIGHT_KEY: Keycode = Keycode::Right;
-const ESCAPE_KEY: Keycode = Keycode::Escape;
-const SPRINT_KEY: Keycode = Keycode::LShift;
+const KEY_NUM: usize = Key::Invalid as usize;
+
+impl From<Keycode> for Key {
+    fn from(code: Keycode) -> Self {
+        match code {
+            Keycode::Up => Key::Up,
+            Keycode::Down => Key::Down,
+            Keycode::Left => Key::Left,
+            Keycode::Right => Key::Right,
+            Keycode::Escape => Key::Escape,
+            Keycode::LShift => Key::Sprint,
+            _ => Key::Invalid,
+        }
+    }
+}
 
 impl ButtonState {
-    fn update(&mut self, event: KeyEventType) {
+    fn update_with_event(&mut self, event: KeyEventType) {
         use ButtonState::*;
         use KeyEventType::*;
+
         match (&self, event) {
             (Active, Up) => *self = Inactive,
             (Inactive, Down) => *self = Pressed,
@@ -58,58 +67,56 @@ impl ButtonState {
             _ => (),
         }
     }
+
+    fn update_pressed(&mut self) {
+        if let ButtonState::Pressed = &self {
+            *self = ButtonState::Active
+        }
+    }
 }
 
 impl Controller {
     pub fn new() -> Controller {
         Controller {
             mouse: Mouse::new(),
-            up: ButtonState::Inactive,
-            down: ButtonState::Inactive,
-            left: ButtonState::Inactive,
-            right: ButtonState::Inactive,
-            escape: ButtonState::Inactive,
-            sprint: ButtonState::Inactive,
+            keys: [ButtonState::Inactive; KEY_NUM],
         }
     }
 
-    fn update_key(&mut self, event: KeyEventType, code: Keycode) {
-        match code {
-            UP_KEY => self.up.update(event),
-            DOWN_KEY => self.down.update(event),
-            LEFT_KEY => self.left.update(event),
-            RIGHT_KEY => self.right.update(event),
-            ESCAPE_KEY => self.escape.update(event),
-            SPRINT_KEY => self.sprint.update(event),
-            _ => (),
-        }
-    }
+    pub fn update(&mut self, events: Vec<Event>) {
+        let mut updated_last_frame = [false; KEY_NUM];
 
-    pub fn update(&mut self, event: &Event) {
-        match event {
-            Event::KeyDown {
-                keycode: Some(key), ..
-            } => {
-                self.update_key(KeyEventType::Down, *key);
+        for event in events.iter() {
+            match event {
+                Event::KeyDown {
+                    keycode: Some(code),
+                    ..
+                } => {
+                    let index = Key::from(*code) as usize;
+                    self.keys[index].update_with_event(KeyEventType::Down);
+                    updated_last_frame[index] = true;
+                }
+                Event::KeyUp {
+                    keycode: Some(code),
+                    ..
+                } => {
+                    let index = Key::from(*code) as usize;
+                    self.keys[index].update_with_event(KeyEventType::Up);
+                    updated_last_frame[index] = false;
+                }
+                _ => (),
             }
-            Event::KeyUp {
-                keycode: Some(key), ..
-            } => {
-                self.update_key(KeyEventType::Up, *key);
+        }
+
+        for (index, key) in self.keys.iter_mut().enumerate() {
+            if !updated_last_frame[index] {
+                key.update_pressed()
             }
-            _ => (),
         }
     }
 
-    pub fn active(&self, key: Key) -> bool {
-        match key {
-            Key::Down => self.down != ButtonState::Inactive,
-            Key::Right => self.right != ButtonState::Inactive,
-            Key::Up => self.up != ButtonState::Inactive,
-            Key::Left => self.left != ButtonState::Inactive,
-            Key::Sprint => self.sprint != ButtonState::Inactive,
-            Key::Escape => self.escape != ButtonState::Inactive,
-        }
+    pub fn is_key_pressed(&self, key: Key) -> bool {
+        self.keys[key as usize] != ButtonState::Inactive
     }
 }
 

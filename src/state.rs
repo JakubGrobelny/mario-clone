@@ -5,8 +5,8 @@ use crate::render::*;
 use crate::resource::*;
 use crate::utility::*;
 
-use sdl2::{event::Event, EventPump};
 use sdl2::pixels::Color;
+use sdl2::{event::Event, EventPump};
 
 pub struct Score {
     lives: u32,
@@ -41,6 +41,7 @@ impl GameState {
             resources.config().window_height() as i32 / 2,
         );
         let camera = Camera::new(player.position_x(), player.position_y());
+
         Ok(GameState {
             should_exit: false,
             controller: Controller::new(),
@@ -58,12 +59,9 @@ impl GameState {
         &self.resources
     }
 
-    fn process_events(&mut self, event_pump: &mut EventPump) {
-        for event in event_pump.poll_iter() {
+    fn process_events(&mut self, events: Vec<Event>) {
+        for event in events.iter() {
             match event {
-                Event::KeyDown { .. } | Event::KeyUp { .. } => {
-                    self.controller.update(&event);
-                }
                 Event::Quit { .. } => {
                     self.should_exit = true;
                     break;
@@ -74,13 +72,22 @@ impl GameState {
     }
 
     pub fn update(&mut self, event_pump: &mut EventPump) {
-        self.process_events(event_pump);
-
-        if self.controller.active(Key::Escape) {
-            self.should_exit = true;
+        fn is_keyboard_event(event: &Event) -> bool {
+            match event {
+                Event::KeyDown { .. } | Event::KeyUp { .. } => true,
+                _ => false,
+            }
         }
 
-        eprintln!("{:?}", self.controller);
+        let (key_events, events): (Vec<_>, Vec<_>) =
+            event_pump.poll_iter().partition(is_keyboard_event);
+
+        self.controller.update(key_events);
+        self.process_events(events);
+
+        if self.controller.is_key_pressed(Key::Escape) {
+            self.should_exit = true;
+        }
 
         if self.should_exit {
             return;
@@ -95,12 +102,7 @@ impl GameState {
     pub fn draw(&self, canvas: &mut Canvas) {
         canvas.set_draw_color(Color::RGB(0, 0, 0));
         canvas.clear();
-        if let Activity::Game {
-            player,
-            camera,
-            ..
-        } = &self.activity
-        {
+        if let Activity::Game { player, camera, .. } = &self.activity {
             player.draw(canvas, &camera);
         }
         canvas.present();
