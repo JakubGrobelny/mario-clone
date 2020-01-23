@@ -30,6 +30,7 @@ impl Config {
         let cfg_path = res_path.join(CFG_FILE_NAME);
         let cfg_str = fs::read_to_string(cfg_path.as_path())?;
         let cfg = serde_json::from_str(&cfg_str)?;
+
         Ok(cfg)
     }
 
