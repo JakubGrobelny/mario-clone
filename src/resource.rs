@@ -6,6 +6,7 @@ use crate::utility::{get_base_path, Result};
 pub struct ResourceManager {
     res_path: PathBuf,
     config: Config,
+    
 }
 
 impl ResourceManager {

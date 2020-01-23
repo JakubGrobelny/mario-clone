@@ -62,7 +62,6 @@ impl ButtonState {
         match (&self, event) {
             (Active, Up) => *self = Inactive,
             (Inactive, Down) => *self = Pressed,
-            (Pressed, Down) => *self = Active,
             (Pressed, Up) => *self = Inactive,
             _ => (),
         }
@@ -84,7 +83,9 @@ impl Controller {
     }
 
     pub fn update(&mut self, events: Vec<Event>) {
-        let mut updated_last_frame = [false; KEY_NUM];
+        for key in self.keys.iter_mut() {
+            key.update_pressed();
+        }
 
         for event in events.iter() {
             match event {
@@ -94,7 +95,6 @@ impl Controller {
                 } => {
                     let index = Key::from(*code) as usize;
                     self.keys[index].update_with_event(KeyEventType::Down);
-                    updated_last_frame[index] = true;
                 }
                 Event::KeyUp {
                     keycode: Some(code),
@@ -102,17 +102,11 @@ impl Controller {
                 } => {
                     let index = Key::from(*code) as usize;
                     self.keys[index].update_with_event(KeyEventType::Up);
-                    updated_last_frame[index] = false;
                 }
                 _ => (),
             }
         }
 
-        for (index, key) in self.keys.iter_mut().enumerate() {
-            if !updated_last_frame[index] {
-                key.update_pressed()
-            }
-        }
     }
 
     pub fn is_key_pressed(&self, key: Key) -> bool {

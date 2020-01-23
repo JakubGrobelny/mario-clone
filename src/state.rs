@@ -31,6 +31,7 @@ pub struct GameState {
     controller: Controller,
     resources: ResourceManager,
     activity: Activity,
+    frame: u32,
 }
 
 impl GameState {
@@ -52,6 +53,7 @@ impl GameState {
                 paused: false,
                 score: Score::new(),
             },
+            frame: 0,
         })
     }
 
@@ -61,17 +63,18 @@ impl GameState {
 
     fn process_events(&mut self, events: Vec<Event>) {
         for event in events.iter() {
-            match event {
-                Event::Quit { .. } => {
-                    self.should_exit = true;
-                    break;
-                }
-                _ => (),
+            if let Event::Quit { .. } = event {
+                self.should_exit = true;
+                break;
             }
         }
     }
 
     pub fn update(&mut self, event_pump: &mut EventPump) {
+        if self.frame > 1_024 {
+            self.frame = 0;
+        }
+
         fn is_keyboard_event(event: &Event) -> bool {
             match event {
                 Event::KeyDown { .. } | Event::KeyUp { .. } => true,
