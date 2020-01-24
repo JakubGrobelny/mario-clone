@@ -1,8 +1,9 @@
 use sdl2::event::Event;
 use sdl2::event::EventPollIterator;
 use sdl2::keyboard::Keycode;
+use sdl2::mouse::MouseButton;
 
-enum KeyEventType {
+pub enum KeyEventType {
     Down,
     Up,
 }
@@ -17,7 +18,9 @@ pub enum ButtonState {
 #[derive(Debug)]
 pub struct Mouse {
     pos: (i32, i32),
-    state: (ButtonState, ButtonState),
+    left_button: ButtonState,
+    right_button: ButtonState,
+    scroll: i32,
 }
 
 #[derive(Debug)]
@@ -82,10 +85,14 @@ impl Controller {
         }
     }
 
-    pub fn update(&mut self, events: Vec<Event>) {
+    pub fn update(&mut self, events: &[Event]) {
         for key in self.keys.iter_mut() {
             key.update_pressed();
         }
+
+        self.mouse.right_button.update_pressed();
+        self.mouse.left_button.update_pressed();
+        self.mouse.scroll = 0;
 
         for event in events.iter() {
             match event {
@@ -103,10 +110,29 @@ impl Controller {
                     let index = Key::from(*code) as usize;
                     self.keys[index].update_with_event(KeyEventType::Up);
                 }
+                Event::MouseMotion { x, y, .. } => {
+                    self.mouse.update_position(*x, *y);
+                }
+                Event::MouseButtonDown { mouse_btn, .. } => {
+                    self.mouse.update_button_with_event(
+                        *mouse_btn,
+                        KeyEventType::Down,
+                    );
+                }
+                Event::MouseButtonUp { mouse_btn, .. } => {
+                    self.mouse
+                        .update_button_with_event(*mouse_btn, KeyEventType::Up);
+                }
+                Event::MouseWheel { y, .. } => {
+                    self.mouse.scroll = *y;
+                },
                 _ => (),
             }
         }
+    }
 
+    pub fn mouse(&mut self) -> &mut Mouse {
+        &mut self.mouse
     }
 
     pub fn is_key_pressed(&self, key: Key) -> bool {
@@ -118,7 +144,41 @@ impl Mouse {
     pub fn new() -> Mouse {
         Mouse {
             pos: (0, 0),
-            state: (ButtonState::Inactive, ButtonState::Inactive),
+            left_button: ButtonState::Inactive,
+            right_button: ButtonState::Inactive,
+            scroll: 0,
+        }
+    }
+
+    pub fn scroll(&self) -> i32 {
+        self.scroll
+    }
+
+    pub fn is_left_button_pressed(&self) -> bool {
+        self.left_button != ButtonState::Inactive
+    }
+
+    pub fn is_right_button_pressed(&self) -> bool {
+        self.right_button != ButtonState::Inactive
+    }
+
+    pub fn update_position(&mut self, x: i32, y: i32) {
+        self.pos = (x, y);
+    }
+
+    pub fn update_button_with_event(
+        &mut self,
+        button: MouseButton,
+        event: KeyEventType,
+    ) {
+        match button {
+            MouseButton::Left => {
+                self.left_button.update_with_event(event);
+            }
+            MouseButton::Right => {
+                self.right_button.update_with_event(event);
+            }
+            _ => (),
         }
     }
 }

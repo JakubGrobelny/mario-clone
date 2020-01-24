@@ -1,4 +1,3 @@
-extern crate serde_json;
 use serde::{Deserialize, Serialize};
 
 use crate::utility::Result;

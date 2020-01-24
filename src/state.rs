@@ -15,15 +15,37 @@ pub struct Score {
 
 pub enum Activity {
     Game {
-        // current_level: usize,
-        // levels: Vec<Level>,
+        current_level: usize,
+        levels: Vec<(String, Level)>,
         player: Player,
         paused: bool,
         camera: Camera,
         score: Score,
     },
-    Editor {},
-    Menu,
+    Editor {
+        camera: Camera,
+        // level: Level,
+        // level_name: String,
+        paused: bool,
+    },
+    Menu {},
+}
+
+impl Activity {
+    // pub fn new_game(resources: &ResourceManager) -> Activity {
+    // }
+
+    pub fn new_editor(resources: &ResourceManager) -> Activity {
+        let scr_h = resources.config().window_height();
+        let scr_w = resources.config().window_width();
+        let cam_x = scr_w as i32 / 2;
+        let cam_y = scr_h as i32 / 2;
+        let camera = Camera::new(cam_x, cam_y, scr_w, scr_h);
+        Activity::Editor {
+            camera,
+            paused: false,
+        }
+    }
 }
 
 pub struct GameState {
@@ -37,22 +59,13 @@ pub struct GameState {
 impl GameState {
     pub fn new() -> Result<GameState> {
         let resources = ResourceManager::new()?;
-        let player = Player::new(
-            resources.config().window_width() as i32 / 2,
-            resources.config().window_height() as i32 / 2,
-        );
-        let camera = Camera::new(player.position_x(), player.position_y());
+        let activity = Activity::new_editor(&resources);
 
         Ok(GameState {
             should_exit: false,
             controller: Controller::new(),
             resources,
-            activity: Activity::Game {
-                player,
-                camera,
-                paused: false,
-                score: Score::new(),
-            },
+            activity,
             frame: 0,
         })
     }
@@ -61,7 +74,7 @@ impl GameState {
         &self.resources
     }
 
-    fn process_events(&mut self, events: Vec<Event>) {
+    fn process_events(&mut self, events: &[Event]) {
         for event in events.iter() {
             if let Event::Quit { .. } = event {
                 self.should_exit = true;
@@ -75,18 +88,10 @@ impl GameState {
             self.frame = 0;
         }
 
-        fn is_keyboard_event(event: &Event) -> bool {
-            match event {
-                Event::KeyDown { .. } | Event::KeyUp { .. } => true,
-                _ => false,
-            }
-        }
+        let events: Vec<_> = event_pump.poll_iter().collect();
 
-        let (key_events, events): (Vec<_>, Vec<_>) =
-            event_pump.poll_iter().partition(is_keyboard_event);
-
-        self.controller.update(key_events);
-        self.process_events(events);
+        self.controller.update(&events);
+        self.process_events(&events);
 
         if self.controller.is_key_pressed(Key::Escape) {
             self.should_exit = true;
@@ -96,18 +101,35 @@ impl GameState {
             return;
         }
 
-        if let Activity::Game { player, .. } = &mut self.activity {
-            player.accelerate(&self.controller);
-            player.apply_speed();
+        eprintln!("{:?}", self.controller);
+
+        match &mut self.activity {
+            Activity::Game { player, .. } => {
+                player.accelerate(&self.controller);
+                player.apply_speed();
+            }
+            Activity::Editor { camera, .. } => {
+                let scroll = self.controller.mouse().scroll();
+                camera.shift((scroll * -10, 0));
+            }
+            Activity::Menu { .. } => {}
         }
     }
 
     pub fn draw(&self, canvas: &mut Canvas) {
-        canvas.set_draw_color(Color::RGB(0, 0, 0));
+        canvas.set_draw_color(Color::RGB(88, 100, 255));
         canvas.clear();
-        if let Activity::Game { player, camera, .. } = &self.activity {
-            player.draw(canvas, &camera);
+
+        match &self.activity {
+            Activity::Game { player, camera, .. } => {
+                player.draw(canvas, &camera);
+            }
+            Activity::Editor { camera, .. } => {
+                draw_grid(canvas, &camera);
+            }
+            Activity::Menu { .. } => {}
         }
+
         canvas.present();
     }
 }

@@ -7,13 +7,19 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-const LEVEL_HEIGHT: usize = 20;
-const LEVEL_WIDTH: usize = 220;
+pub const LEVEL_HEIGHT: usize = 20;
+pub const LEVEL_WIDTH: usize = 220;
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Clone)]
 pub struct Level {
     theme: LevelTheme,
-    blocks: [Vec<Block>; LEVEL_HEIGHT],
+    blocks: [[Block; LEVEL_WIDTH]; LEVEL_HEIGHT],
+}
+
+#[derive(Deserialize, Serialize)]
+struct LevelJSON {
+    theme: LevelTheme,
+    blocks: String,
 }
 
 #[derive(Deserialize, Serialize, Copy, Clone)]
@@ -23,15 +29,32 @@ enum LevelTheme {
     Night,
 }
 
+impl From<&LevelJSON> for Level {
+    fn from(json: &LevelJSON) -> Level {
+        if json.blocks.len() != LEVEL_HEIGHT * LEVEL_WIDTH {
+            panic_with_messagebox("Corrupted level data (invalid level size)!");
+        }
+
+        let mut blocks = [[Block::default(); LEVEL_WIDTH]; LEVEL_HEIGHT];
+        for (i, c) in json.blocks.chars().enumerate() {
+            let block = Block::from(c);
+            let row = i / LEVEL_HEIGHT;
+            let col = i % LEVEL_WIDTH;
+            blocks[row][col] = block;
+        }
+
+        Level {
+            theme: json.theme,
+            blocks,
+        }
+    }
+}
+
 impl Level {
     pub fn new(path: &Path) -> Result<Level> {
         let file_contents = fs::read_to_string(path)?;
-        let level: Level = serde_json::from_str(&file_contents)?;
-        if level.blocks.iter().any(|vec| vec.len() != LEVEL_WIDTH) {
-            Err("Invalid level length!".into())
-        } else {
-            Ok(level)
-        }
+        let level_json: LevelJSON = serde_json::from_str(&file_contents)?;
+        Ok(Level::from(&level_json))
     }
 }
 
@@ -45,10 +68,16 @@ pub fn load_levels(res_path: &Path) -> Result<Vec<(String, Level)>> {
     let level_list_str = fs::read_to_string(levels_path.join("levels.json"))?;
     let level_list: LevelList = serde_json::from_str(&level_list_str)?;
 
-    Ok(level_list.levels.into_iter().map(|name| {
-        let path = levels_path.join(format!("{}.lvl", name));
-        let level = Level::new(path.as_path())
-            .expect(&format!("Failed to load level '{}'!", name));
-        (name, level)
-    }).collect())
+    Ok(level_list
+        .levels
+        .into_iter()
+        .map(|name| {
+            let path = levels_path.join(format!("{}.lvl", name));
+            let level = Level::new(path.as_path()).unwrap_or_else(|_| {
+                let error_msg = format!("Failed to load level '{}'!", name);
+                panic_with_messagebox(&error_msg);
+            });
+            (name, level)
+        })
+        .collect())
 }
