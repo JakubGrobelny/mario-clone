@@ -12,9 +12,8 @@ mod render;
 mod resource;
 mod state;
 mod utility;
+mod interface;
 
-use render::*;
-use resource::ResourceManager;
 use state::*;
 use utility::Result;
 
@@ -30,7 +29,8 @@ fn main() -> Result<()> {
     let video = context.video()?;
     let frame_time : Duration = Duration::from_secs(1) / FPS;
 
-    let mut game_state = GameState::new()?;
+    let event_pump = context.event_pump()?;
+    let mut game_state = GameState::new(event_pump)?;
 
     let window = video
         .window(
@@ -51,12 +51,10 @@ fn main() -> Result<()> {
     canvas.clear();
     canvas.present();
 
-    let mut event_pump = context.event_pump()?;
     'running: loop {
         let now = SystemTime::now();
   
-        game_state.update(&mut event_pump);
-
+        game_state.update();
         if game_state.should_exit {
             break 'running;
         }

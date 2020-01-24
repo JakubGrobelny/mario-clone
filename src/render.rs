@@ -2,9 +2,11 @@ use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
 
 use crate::block::*;
-use crate::player::*;
-use crate::state::*;
+use crate::interface::*;
 use crate::level::*;
+use crate::player::*;
+use crate::resource::*;
+use crate::state::*;
 
 pub type Canvas = sdl2::render::Canvas<sdl2::video::Window>;
 
@@ -17,7 +19,13 @@ pub struct Camera {
 }
 
 pub trait Drawable {
-    fn draw(&self, canvas: &mut Canvas, camera: &Camera);
+    fn draw(&self, canvas: &mut Canvas, cam: &Camera, res: &ResourceManager);
+}
+
+impl Default for Camera {
+    fn default() -> Camera {
+        Camera::new(0, 0, 0, 0)
+    }
 }
 
 impl Camera {
@@ -55,8 +63,18 @@ impl Camera {
     }
 }
 
+impl Drawable for Button {
+    fn draw(&self, canvas: &mut Canvas, _cam: &Camera, res: &ResourceManager) {
+        let button_color = Color::RGB(255, 153, 0);
+        canvas.set_draw_color(button_color);
+        canvas
+            .fill_rect(*self.rect())
+            .expect("Failed to draw a button!");
+    }
+}
+
 impl Drawable for Player {
-    fn draw(&self, canvas: &mut Canvas, camera: &Camera) {
+    fn draw(&self, canvas: &mut Canvas, _cam: &Camera, _res: &ResourceManager) {
         canvas.set_draw_color(Color::RGB(255, 0, 0));
         let rect = Rect::new(
             self.position_x(),
@@ -64,7 +82,7 @@ impl Drawable for Player {
             PLAYER_WIDTH as u32,
             PLAYER_HEIGHT as u32,
         );
-        canvas.fill_rect(rect).expect("Failed to fill a rectangle");
+        canvas.fill_rect(rect).expect("Failed to fill a rectangle!");
     }
 }
 

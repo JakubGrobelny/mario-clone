@@ -1,4 +1,5 @@
 use crate::controller::*;
+use crate::interface::*;
 use crate::level::*;
 use crate::player::*;
 use crate::render::*;
@@ -8,6 +9,15 @@ use crate::utility::*;
 use sdl2::pixels::Color;
 use sdl2::{event::Event, EventPump};
 
+pub struct GameState {
+    pub should_exit: bool,
+    controller: Controller,
+    resources: ResourceManager,
+    activity: Activity,
+    event_pump: EventPump,
+    frame: u32,
+}
+
 pub struct Score {
     lives: u32,
     coins: u32,
@@ -15,12 +25,12 @@ pub struct Score {
 
 pub enum Activity {
     Game {
-        current_level: usize,
-        levels: Vec<(String, Level)>,
+        // current_level: usize,
+        // levels: Vec<(String, Level)>,
         player: Player,
-        paused: bool,
+        // paused: bool,
         camera: Camera,
-        score: Score,
+        // score: Score,
     },
     Editor {
         camera: Camera,
@@ -28,12 +38,23 @@ pub enum Activity {
         // level_name: String,
         paused: bool,
     },
-    Menu {},
+    MainMenu {
+        buttons: Vec<Button>,
+    },
 }
 
 impl Activity {
-    // pub fn new_game(resources: &ResourceManager) -> Activity {
-    // }
+    pub fn new_game(resources: &ResourceManager) -> Activity {
+        let player = Player::new(200, 200);
+        let camera = Camera::new(
+            player.position_x(),
+            player.position_y(),
+            resources.config().window_width(),
+            resources.config().window_height(),
+        );
+
+        Activity::Game { player, camera }
+    }
 
     pub fn new_editor(resources: &ResourceManager) -> Activity {
         let scr_h = resources.config().window_height();
@@ -46,24 +67,61 @@ impl Activity {
             paused: false,
         }
     }
+
+    pub fn new_main_menu(resources: &ResourceManager) -> Activity {
+        fn exit_button_on_click(state: &mut GameState) {
+            state.should_exit = true;
+        }
+
+        fn start_button_on_click(state: &mut GameState) {
+            state.activity = Activity::new_game(state.resources());
+        }
+
+        fn editor_button_on_click(state: &mut GameState) {
+            state.activity = Activity::new_editor(state.resources());
+        }
+
+        const BUTTON_WIDTH: u32 = 300;
+        const BUTTON_HEIGHT: u32 = 120;
+        const BUTTON_DISTANCE: u32 = 20;
+        const BUTTONS_Y_OFFSET: i32 = 100;
+
+        let button_info = vec![
+            ("START", start_button_on_click as fn(&mut GameState)),
+            ("EDITOR", editor_button_on_click),
+            ("EXIT", exit_button_on_click),
+        ];
+
+        let buttons = make_button_column(
+            button_info,
+            BUTTON_WIDTH,
+            BUTTON_HEIGHT,
+            BUTTON_DISTANCE,
+            resources.config().window_width(),
+            resources.config().window_height(),
+            0,
+            BUTTONS_Y_OFFSET,
+        );
+
+        Activity::MainMenu { buttons }
+    }
 }
 
-pub struct GameState {
-    pub should_exit: bool,
-    controller: Controller,
-    resources: ResourceManager,
-    activity: Activity,
-    frame: u32,
+impl Score {
+    pub fn new() -> Score {
+        Score { lives: 3, coins: 0 }
+    }
 }
 
 impl GameState {
-    pub fn new() -> Result<GameState> {
+    pub fn new(event_pump: EventPump) -> Result<GameState> {
         let resources = ResourceManager::new()?;
-        let activity = Activity::new_editor(&resources);
+        let activity = Activity::new_main_menu(&resources);
 
         Ok(GameState {
             should_exit: false,
             controller: Controller::new(),
+            event_pump,
             resources,
             activity,
             frame: 0,
@@ -83,12 +141,26 @@ impl GameState {
         }
     }
 
-    pub fn update(&mut self, event_pump: &mut EventPump) {
+    fn update_activity(&mut self) {
+        match &mut self.activity {
+            Activity::Game { player, .. } => {
+                player.accelerate(&self.controller);
+                player.apply_speed();
+            }
+            Activity::Editor { camera, .. } => {
+                let scroll = self.controller.mouse().scroll();
+                camera.shift((scroll * -10, 0));
+            }
+            Activity::MainMenu { .. } => {}
+        }
+    }
+
+    pub fn update(&mut self) {
         if self.frame > 1_024 {
             self.frame = 0;
         }
 
-        let events: Vec<_> = event_pump.poll_iter().collect();
+        let events: Vec<_> = self.event_pump.poll_iter().collect();
 
         self.controller.update(&events);
         self.process_events(&events);
@@ -101,19 +173,7 @@ impl GameState {
             return;
         }
 
-        eprintln!("{:?}", self.controller);
-
-        match &mut self.activity {
-            Activity::Game { player, .. } => {
-                player.accelerate(&self.controller);
-                player.apply_speed();
-            }
-            Activity::Editor { camera, .. } => {
-                let scroll = self.controller.mouse().scroll();
-                camera.shift((scroll * -10, 0));
-            }
-            Activity::Menu { .. } => {}
-        }
+        self.update_activity();
     }
 
     pub fn draw(&self, canvas: &mut Canvas) {
@@ -122,20 +182,18 @@ impl GameState {
 
         match &self.activity {
             Activity::Game { player, camera, .. } => {
-                player.draw(canvas, &camera);
+                player.draw(canvas, &camera, &self.resources());
             }
             Activity::Editor { camera, .. } => {
                 draw_grid(canvas, &camera);
             }
-            Activity::Menu { .. } => {}
+            Activity::MainMenu { buttons } => {
+                for button in buttons {
+                    button.draw(canvas, &Camera::default(), &self.resources());
+                }
+            }
         }
 
         canvas.present();
-    }
-}
-
-impl Score {
-    pub fn new() -> Score {
-        Score { lives: 3, coins: 0 }
     }
 }

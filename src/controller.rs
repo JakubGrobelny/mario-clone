@@ -1,5 +1,4 @@
 use sdl2::event::Event;
-use sdl2::event::EventPollIterator;
 use sdl2::keyboard::Keycode;
 use sdl2::mouse::MouseButton;
 
@@ -37,6 +36,7 @@ pub enum Key {
     Right,
     Escape,
     Sprint,
+    Enter,
 
     Invalid,
 }
@@ -52,6 +52,7 @@ impl From<Keycode> for Key {
             Keycode::Right => Key::Right,
             Keycode::Escape => Key::Escape,
             Keycode::LShift => Key::Sprint,
+            Keycode::KpEnter => Key::Enter,
             _ => Key::Invalid,
         }
     }

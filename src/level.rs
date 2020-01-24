@@ -13,13 +13,13 @@ pub const LEVEL_WIDTH: usize = 220;
 #[derive(Clone)]
 pub struct Level {
     theme: LevelTheme,
-    blocks: [[Block; LEVEL_WIDTH]; LEVEL_HEIGHT],
+    blocks: [[BlockType; LEVEL_WIDTH]; LEVEL_HEIGHT],
 }
 
 #[derive(Deserialize, Serialize)]
 struct LevelJSON {
     theme: LevelTheme,
-    blocks: String,
+    blocks: Vec<BlockType>,
 }
 
 #[derive(Deserialize, Serialize, Copy, Clone)]
@@ -29,15 +29,14 @@ enum LevelTheme {
     Night,
 }
 
-impl From<&LevelJSON> for Level {
-    fn from(json: &LevelJSON) -> Level {
+impl From<LevelJSON> for Level {
+    fn from(json: LevelJSON) -> Level {
         if json.blocks.len() != LEVEL_HEIGHT * LEVEL_WIDTH {
             panic_with_messagebox("Corrupted level data (invalid level size)!");
         }
 
-        let mut blocks = [[Block::default(); LEVEL_WIDTH]; LEVEL_HEIGHT];
-        for (i, c) in json.blocks.chars().enumerate() {
-            let block = Block::from(c);
+        let mut blocks = [[BlockType::default(); LEVEL_WIDTH]; LEVEL_HEIGHT];
+        for (i, block) in json.blocks.into_iter().enumerate() {
             let row = i / LEVEL_HEIGHT;
             let col = i % LEVEL_WIDTH;
             blocks[row][col] = block;
@@ -54,7 +53,7 @@ impl Level {
     pub fn new(path: &Path) -> Result<Level> {
         let file_contents = fs::read_to_string(path)?;
         let level_json: LevelJSON = serde_json::from_str(&file_contents)?;
-        Ok(Level::from(&level_json))
+        Ok(Level::from(level_json))
     }
 }
 
