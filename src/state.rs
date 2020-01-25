@@ -1,18 +1,19 @@
 use crate::controller::*;
 use crate::interface::*;
-use crate::level::*;
 use crate::player::*;
 use crate::render::*;
 use crate::resource::*;
 use crate::utility::*;
 
 use sdl2::pixels::Color;
+use sdl2::ttf::Sdl2TtfContext;
+use sdl2::Sdl;
 use sdl2::{event::Event, EventPump};
 
-pub struct GameState {
+pub struct GameState<'a> {
     pub should_exit: bool,
     controller: Controller,
-    resources: ResourceManager,
+    resources: ResourceManager<'a>,
     activity: Activity,
     event_pump: EventPump,
     frame: u32,
@@ -99,8 +100,7 @@ impl Activity {
             BUTTON_DISTANCE,
             resources.config().window_width(),
             resources.config().window_height(),
-            0,
-            BUTTONS_Y_OFFSET,
+            (0, BUTTONS_Y_OFFSET),
         );
 
         Activity::MainMenu { buttons }
@@ -113,9 +113,13 @@ impl Score {
     }
 }
 
-impl GameState {
-    pub fn new(event_pump: EventPump) -> Result<GameState> {
-        let resources = ResourceManager::new()?;
+impl GameState<'_> {
+    pub fn new<'a>(
+        context: &'a Sdl,
+        ttf: &'a Sdl2TtfContext,
+    ) -> Result<GameState<'a>> {
+        let resources = ResourceManager::new(ttf)?;
+        let event_pump = context.event_pump()?;
         let activity = Activity::new_main_menu(&resources);
 
         Ok(GameState {
@@ -176,24 +180,28 @@ impl GameState {
         self.update_activity();
     }
 
-    pub fn draw(&self, canvas: &mut Canvas) {
-        canvas.set_draw_color(Color::RGB(88, 100, 255));
-        canvas.clear();
+    pub fn draw(&self, renderer: &mut Renderer) {
+        renderer.canvas.set_draw_color(Color::RGB(88, 100, 255));
+        renderer.canvas.clear();
 
         match &self.activity {
             Activity::Game { player, camera, .. } => {
-                player.draw(canvas, &camera, &self.resources());
+                player.draw(renderer, &camera, &self.resources());
             }
             Activity::Editor { camera, .. } => {
-                draw_grid(canvas, &camera);
+                draw_grid(renderer, &camera);
             }
             Activity::MainMenu { buttons } => {
                 for button in buttons {
-                    button.draw(canvas, &Camera::default(), &self.resources());
+                    button.draw(
+                        renderer,
+                        &Camera::default(),
+                        &self.resources(),
+                    );
                 }
             }
         }
 
-        canvas.present();
+        renderer.canvas.present();
     }
 }

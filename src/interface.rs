@@ -1,5 +1,4 @@
 use crate::state::*;
-use crate::render::*;
 
 use sdl2::rect::Rect;
 
@@ -20,18 +19,17 @@ pub fn make_button_column(
     separation: u32,
     scr_width: u32,
     scr_height: u32,
-    x_shift: i32,
-    y_shift: i32,
+    shift: (i32, i32),
 ) -> Vec<Button> {
     let num_of_buttons = buttons.len() as u32;
     let free_height = scr_height
         - height * num_of_buttons
         - separation * (num_of_buttons - 1);
     let y_offset = free_height as i32 / 2;
-    let x = (scr_width - width) as i32 / 2 + x_shift;
+    let x = (scr_width - width) as i32 / 2 + shift.0;
 
     buttons.into_iter().enumerate().map(|(i, (text, on_click))| {
-        let y = y_offset + i as i32 * (height + separation) as i32 + y_shift;
+        let y = y_offset + i as i32 * (height + separation) as i32 + shift.1;
         Button::new(String::from(text), x, y, width, height, on_click)
     }).collect()
 }

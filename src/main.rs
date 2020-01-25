@@ -15,6 +15,7 @@ mod utility;
 mod interface;
 
 use state::*;
+use render::*;
 use utility::Result;
 
 use sdl2::pixels::Color;
@@ -28,9 +29,9 @@ fn main() -> Result<()> {
     let context = sdl2::init()?;
     let video = context.video()?;
     let frame_time : Duration = Duration::from_secs(1) / FPS;
+    let ttf_context = sdl2::ttf::init()?;
 
-    let event_pump = context.event_pump()?;
-    let mut game_state = GameState::new(event_pump)?;
+    let mut game_state = GameState::new(&context, &ttf_context)?;
 
     let window = video
         .window(
@@ -42,14 +43,15 @@ fn main() -> Result<()> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let mut canvas = window
+    let canvas = window
         .into_canvas()
         .build()
         .map_err(|e| e.to_string())?;
 
-    canvas.set_draw_color(Color::RGB(0, 0, 0));
-    canvas.clear();
-    canvas.present();
+    let mut renderer = Renderer::new(canvas);
+    renderer.canvas.set_draw_color(Color::RGB(0, 0, 0));
+    renderer.canvas.clear();
+    renderer.canvas.present();
 
     'running: loop {
         let now = SystemTime::now();
@@ -59,7 +61,7 @@ fn main() -> Result<()> {
             break 'running;
         }
 
-        game_state.draw(&mut canvas);
+        game_state.draw(&mut renderer);
    
         let elapsed = now.elapsed()?;
         if let Some(time) = frame_time.checked_sub(elapsed) {

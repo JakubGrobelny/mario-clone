@@ -4,8 +4,6 @@ use crate::utility::Result;
 use std::fs;
 use std::path::Path;
 
-use sdl2::keyboard::Keycode;
-
 const CFG_FILE_NAME: &str = "config.json";
 
 fn default_window_height() -> u32 {
