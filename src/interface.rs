@@ -5,7 +5,7 @@ use sdl2::rect::Rect;
 pub struct Button {
     text: String,
     rect: Rect,
-    on_click: fn(&mut GameState),
+    pub effect: fn(&mut GameState),
 }
 
 pub trait InterfaceElement {
@@ -41,13 +41,17 @@ impl Button {
         y: i32,
         width: u32,
         height: u32,
-        on_click: fn(&mut GameState),
+        effect: fn(&mut GameState),
     ) -> Button {
         Button {
             text,
             rect: Rect::new(x, y, width, height),
-            on_click,
+            effect,
         }
+    }
+
+    pub fn text(&self) -> &str {
+        &self.text
     }
 
     pub fn rect(&self) -> &Rect {
@@ -58,6 +62,6 @@ impl Button {
 
 impl InterfaceElement for Button {
     fn on_click(&self, game_state: &mut GameState) {
-        (self.on_click)(game_state);
+        (self.effect)(game_state);
     }
 }

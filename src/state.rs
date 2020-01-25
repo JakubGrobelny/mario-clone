@@ -1,4 +1,5 @@
 use crate::controller::*;
+use crate::hitbox::*;
 use crate::interface::*;
 use crate::player::*;
 use crate::render::*;
@@ -76,10 +77,12 @@ impl Activity {
 
         fn start_button_on_click(state: &mut GameState) {
             state.activity = Activity::new_game(state.resources());
+            eprintln!("START!");
         }
 
         fn editor_button_on_click(state: &mut GameState) {
             state.activity = Activity::new_editor(state.resources());
+            eprintln!("EDITOR!");
         }
 
         const BUTTON_WIDTH: u32 = 300;
@@ -146,6 +149,8 @@ impl GameState<'_> {
     }
 
     fn update_activity(&mut self) {
+        let mut effects: fn(&mut GameState) = |&mut _| {};
+
         match &mut self.activity {
             Activity::Game { player, .. } => {
                 player.accelerate(&self.controller);
@@ -155,8 +160,20 @@ impl GameState<'_> {
                 let scroll = self.controller.mouse().scroll();
                 camera.shift((scroll * -10, 0));
             }
-            Activity::MainMenu { .. } => {}
+            Activity::MainMenu { buttons } => {
+                let mouse_pos = self.controller.mouse().pos();
+                for button in buttons.iter() {
+                    if mouse_pos.collides(button.rect())
+                        && self.controller.mouse().is_left_button_pressed()
+                    {
+                        effects = button.effect;
+                        break;
+                    }
+                }
+            }
         }
+
+        effects(self);
     }
 
     pub fn update(&mut self) {

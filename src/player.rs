@@ -3,6 +3,7 @@ use crate::hitbox::*;
 use crate::physics::*;
 use vector2d::Vector2D;
 
+#[derive(Debug)]
 pub struct Player {
     position: (i32, i32),
     physics: Physics,
@@ -10,8 +11,8 @@ pub struct Player {
 }
 
 const PLAYER_MASS: f64 = 1.0;
-pub const PLAYER_WIDTH: i32 = 50;
-pub const PLAYER_HEIGHT: i32 = 100;
+pub const PLAYER_WIDTH: u32 = 50;
+pub const PLAYER_HEIGHT: u32 = 100;
 
 impl Player {
     pub fn new(x: i32, y: i32) -> Player {

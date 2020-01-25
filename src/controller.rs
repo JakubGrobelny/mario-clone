@@ -41,7 +41,7 @@ pub enum Key {
     Invalid,
 }
 
-const KEY_NUM: usize = Key::Invalid as usize;
+const KEY_NUM: usize = Key::Invalid as usize + 1;
 
 impl From<Keycode> for Key {
     fn from(code: Keycode) -> Self {
@@ -149,6 +149,10 @@ impl Mouse {
             right_button: ButtonState::Inactive,
             scroll: 0,
         }
+    }
+
+    pub fn pos(&self) -> (i32, i32) {
+        self.pos
     }
 
     pub fn scroll(&self) -> i32 {
