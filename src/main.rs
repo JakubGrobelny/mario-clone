@@ -16,7 +16,7 @@ mod interface;
 
 use state::*;
 use render::*;
-use utility::Result;
+use utility::*;
 
 use sdl2::pixels::Color;
 
@@ -25,7 +25,13 @@ use std::thread::sleep;
 
 const FPS: u32 = 60;
 
-fn main() -> Result<()> {
+fn main() {
+    if let Err(err) = run() {
+        panic_with_messagebox(&err.to_string());
+    }
+}
+
+fn run() -> Result<()> {
     let context = sdl2::init()?;
     let video = context.video()?;
     let frame_time : Duration = Duration::from_secs(1) / FPS;
