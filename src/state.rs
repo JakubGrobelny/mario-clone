@@ -6,6 +6,7 @@ use crate::render::*;
 use crate::resource::*;
 use crate::utility::*;
 
+use sdl2::keyboard::TextInputUtil;
 use sdl2::pixels::Color;
 use sdl2::Sdl;
 use sdl2::{event::Event, EventPump};
@@ -16,7 +17,13 @@ pub struct GameState<'a> {
     resources: ResourceManager<'a>,
     activity: Activity,
     event_pump: EventPump,
+    text_input: TextInput<'a>,
     frame: u32,
+}
+
+pub struct TextInput<'a> {
+    util: &'a TextInputUtil,
+    text: String,
 }
 
 pub struct Score {
@@ -44,6 +51,44 @@ pub enum Activity {
     },
 }
 
+impl TextInput<'_> {
+    pub fn new(util: &TextInputUtil) -> TextInput {
+        TextInput {
+            util,
+            text: String::new(),
+        }
+    }
+
+    pub fn start(&self) {
+        self.util.start();
+    }
+
+    pub fn end(&self) -> &str {
+        self.util.stop();
+        self.text()
+    }
+
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+
+    pub fn clear(&mut self) {
+        self.text = String::new();
+    }
+
+    pub fn input(&mut self, text: &String) {
+        self.text += text;
+    }
+
+    pub fn edit(&mut self, text: &String) {
+        self.text += text;
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.util.is_active()
+    }
+}
+
 impl Activity {
     pub fn new_game(resources: &ResourceManager) -> Activity {
         let player = Player::new(200, 200);
@@ -53,11 +98,8 @@ impl Activity {
     }
 
     pub fn new_editor(resources: &ResourceManager) -> Activity {
-        let cam_x = SCREEN_WIDTH as i32 / 2;
-        let cam_y = SCREEN_HEIGHT as i32 / 2;
-        let camera = Camera::new(cam_x, cam_y);
         Activity::Editor {
-            camera,
+            camera: Camera::default(),
             paused: false,
         }
     }
@@ -75,6 +117,7 @@ impl Activity {
         fn editor_button_on_click(state: &mut GameState) {
             state.activity = Activity::new_editor(state.resources());
             eprintln!("EDITOR!");
+            state.text_input.start();
         }
 
         const BUTTON_WIDTH: u32 = 300;
@@ -110,6 +153,7 @@ impl GameState<'_> {
     pub fn new<'a>(
         resources: ResourceManager<'a>,
         context: &Sdl,
+        text_input: TextInput<'a>,
     ) -> Result<GameState<'a>> {
         let event_pump = context.event_pump()?;
         let activity = Activity::new_main_menu(&resources);
@@ -121,6 +165,7 @@ impl GameState<'_> {
             resources,
             activity,
             frame: 0,
+            text_input,
         })
     }
 
@@ -130,9 +175,18 @@ impl GameState<'_> {
 
     fn process_events(&mut self, events: &[Event]) {
         for event in events.iter() {
-            if let Event::Quit { .. } = event {
-                self.should_exit = true;
-                break;
+            match event {
+                Event::Quit { .. } => {
+                    self.should_exit = true;
+                    break;
+                }
+                Event::TextInput { text, .. } => {
+                    self.text_input.input(text);
+                }
+                Event::TextEditing { text, .. } => {
+                    self.text_input.edit(text);
+                }
+                _ => (),
             }
         }
     }
@@ -155,10 +209,19 @@ impl GameState<'_> {
                     0
                 };
                 camera.shift((x_movement, y_movement));
+                if self.text_input.is_active()
+                    && self.controller.is_key_pressed(Key::Enter)
+                {
+                    self.text_input.end();
+                }
             }
             Activity::MainMenu { buttons } => {
                 let mouse_pos = self.controller.mouse().pos();
                 for button in buttons.iter() {
+                    if self.controller.is_key_pressed(Key::Escape) {
+                        self.should_exit = true;
+                    }
+
                     if mouse_pos.collides(button.rect())
                         && self.controller.mouse().is_left_button_pressed()
                     {
@@ -183,10 +246,6 @@ impl GameState<'_> {
 
         self.controller.update(&events);
         self.process_events(&events);
-
-        if self.controller.is_key_pressed(Key::Escape) {
-            self.should_exit = true;
-        }
 
         if self.should_exit {
             return;
@@ -218,14 +277,17 @@ impl GameState<'_> {
                 // TODO: remove tests
                 let (x, y) =
                     camera.translate_coords(self.controller.mouse().pos());
-                let text = PositionedText::new(
-                    "TEST",
-                    (x, y),
-                    TextAlignment::Center,
-                    0.25,
-                    Color::RGB(255, 255, 255),
-                );
-                text.draw(renderer, camera, &self.resources);
+                if !self.text_input.is_active() {
+                    let input = self.text_input.text();
+                    let text = PositionedText::new(
+                        input,
+                        (x, y),
+                        TextAlignment::Center,
+                        0.25,
+                        Color::RGB(255, 255, 255),
+                    );
+                    text.draw(renderer, camera, &self.resources);
+                }
             }
             Activity::MainMenu { buttons } => {
                 for button in buttons {

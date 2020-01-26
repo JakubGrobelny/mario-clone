@@ -35,8 +35,9 @@ fn run() -> Result<()> {
     let frame_time : Duration = Duration::from_secs(1) / FPS;
     let context = sdl2::init()?;
     let ttf_context = sdl2::ttf::init()?;
-    
-    let window = context.video()?
+    let video = context.video()?;
+
+    let window = video
         .window(
             "mario game",
             SCREEN_WIDTH,
@@ -52,14 +53,17 @@ fn run() -> Result<()> {
         .map_err(|e| e.to_string())?;
 
     let mut renderer = Renderer::new(canvas);
+    
     let texture_creator = renderer.canvas.texture_creator();
-    let texture_cache = TextureCache::new(&texture_creator);
-    let resource_manager = ResourceManager::new(texture_cache, &ttf_context)?;
-    let mut game_state = GameState::new(resource_manager, &context)?;
+    let texture_cache = TextureCache::new(&texture_creator);    
+    let resources = ResourceManager::new(texture_cache, &ttf_context)?;
+    
+    let video_text_input = video.text_input();
+    let text_input = TextInput::new(&video_text_input);
 
-    renderer.canvas.set_draw_color(Color::RGB(0, 0, 0));
-    renderer.canvas.clear();
-    renderer.canvas.present();
+    let mut game_state = GameState::new(resources, &context, text_input)?;
+
+    renderer.clear(&Color::RGB(255, 255, 255));
 
     'running: loop {
         let now = SystemTime::now();

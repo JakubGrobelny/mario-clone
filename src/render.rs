@@ -85,6 +85,12 @@ impl Renderer {
             texture_creator: creator,
         }
     }
+
+    pub fn clear(&mut self, color: &Color) {
+        self.canvas.set_draw_color(*color);
+        self.canvas.clear();
+        self.canvas.present();
+    }
 }
 
 impl Default for Camera {
@@ -156,7 +162,7 @@ impl Drawable for Button {
             Color::RGB(255, 255, 255),
         );
 
-        text.draw(renderer, dbg!(cam), res);
+        text.draw(renderer, cam, res);
     }
 }
 
