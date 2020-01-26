@@ -4,16 +4,12 @@ use std::hash::Hash;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use sdl2::image::{InitFlag, LoadTexture};
-use sdl2::pixels::Color;
+use sdl2::image::LoadTexture;
 use sdl2::render::{Texture, TextureCreator};
-use sdl2::ttf::Sdl2TtfContext;
-use sdl2::video::Window;
+use sdl2::ttf::{Sdl2TtfContext, Font};
 use sdl2::video::WindowContext;
-use sdl2::{Sdl, VideoSubsystem};
 
 use crate::level::*;
-use crate::render::*;
 use crate::utility::*;
 
 pub type TextureCache<'a, T> =
@@ -22,7 +18,7 @@ pub type TextureCache<'a, T> =
 pub struct ResourceManager<'a> {
     res_path: PathBuf,
     levels: Vec<(String, Level)>,
-    font: sdl2::ttf::Font<'a, 'static>,
+    font: Font<'a, 'static>,
     textures: TextureCache<'a, WindowContext>,
 }
 
@@ -96,6 +92,10 @@ impl ResourceManager<'_> {
             font,
             textures: cache,
         })
+    }
+
+    pub fn font(&self) -> &Font {
+        &self.font
     }
 
     pub fn texture(&mut self, name: &str) -> Rc<Texture> {

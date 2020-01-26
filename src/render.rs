@@ -7,28 +7,23 @@ use crate::utility::*;
 
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
-use sdl2::render::TextureCreator;
-use sdl2::surface::Surface;
-use sdl2::ttf::Font;
+use sdl2::render::{Texture, TextureCreator, TextureQuery};
 use sdl2::video::WindowContext;
-
-use std::collections::HashMap;
 
 type Canvas = sdl2::render::Canvas<sdl2::video::Window>;
 
-pub const SCREEN_WIDTH : u32 = 1280;
-pub const SCREEN_HEIGHT : u32 = 720;
+pub const SCREEN_WIDTH: u32 = 1280;
+pub const SCREEN_HEIGHT: u32 = 720;
 
-pub struct Renderer<'a> {
+pub struct Renderer {
     pub canvas: Canvas,
     pub texture_creator: TextureCreator<WindowContext>,
-    strings: HashMap<String, Surface<'a>>,
 }
 
 #[derive(Debug)]
 pub struct Camera {
     x: i32,
-    y: i32
+    y: i32,
 }
 
 pub enum TextAlignment {
@@ -39,9 +34,10 @@ pub enum TextAlignment {
 
 pub struct PositionedText<'a> {
     text: &'a str,
-    rect: &'a Rect,
+    position: (i32, i32),
     alignment: TextAlignment,
-    color: Color
+    scale: f64,
+    color: Color,
 }
 
 pub trait Drawable {
@@ -51,40 +47,45 @@ pub trait Drawable {
 impl PositionedText<'_> {
     pub fn new<'a>(
         text: &'a str,
-        rect: &'a Rect,
+        position: (i32, i32),
         alignment: TextAlignment,
-        color: Color
+        scale: f64,
+        color: Color,
     ) -> PositionedText<'a> {
-        PositionedText { text, rect, alignment, color }
+        PositionedText {
+            text,
+            position,
+            alignment,
+            scale,
+            color,
+        }
+    }
+
+    fn aligned_rect(&self, texture_w: u32, texture_h: u32) -> Rect {
+        let (x0, y) = self.position;
+        let width = (texture_w as f64 * self.scale) as i32;
+        let height = (texture_h as f64 * self.scale) as i32;
+        let real_x = match self.alignment {
+            TextAlignment::Center => {
+                x0 - width / 2
+            },
+            TextAlignment::Left => {
+                x0
+            },
+            TextAlignment::Right => {
+                x0 - width
+            }
+        };
+        Rect::new(real_x, y, width as u32, height as u32)
     }
 }
 
-impl Renderer<'_> {
-    pub fn new<'a>(canvas: Canvas) -> Renderer<'a> {
+impl Renderer {
+    pub fn new<'a>(canvas: Canvas) -> Renderer {
         let creator = canvas.texture_creator();
         Renderer {
             canvas,
             texture_creator: creator,
-            strings: HashMap::new(),
-        }
-    }
-
-    pub fn get_text_surface<'a>(
-        &'a mut self,
-        text: &str,
-        font: &Font,
-        color: Color,
-    ) -> &'a Surface {
-        if self.strings.contains_key(text) {
-            self.strings.get(text).unwrap()
-        } else {
-            let surface =
-                font.render(text).blended(color).unwrap_or_else(|_| {
-                    panic_with_messagebox("Failed to render text!");
-                });
-
-            self.strings.insert(String::from(text), surface);
-            self.strings.get(text).unwrap()
         }
     }
 }
@@ -97,12 +98,12 @@ impl Default for Camera {
 
 impl Camera {
     pub fn new(x: i32, y: i32) -> Camera {
-        const CENTER_X : i32 = SCREEN_WIDTH as i32 / 2;
-        const CENTER_Y : i32 = SCREEN_HEIGHT as i32 / 2;
+        const CENTER_X: i32 = SCREEN_WIDTH as i32 / 2;
+        const CENTER_Y: i32 = SCREEN_HEIGHT as i32 / 2;
 
         Camera {
             x: CENTER_X - x,
-            y: CENTER_Y - y
+            y: CENTER_Y - y,
         }
     }
 
@@ -129,7 +130,7 @@ impl Camera {
 }
 
 impl Drawable for Button {
-    fn draw(&self, renderer: &mut Renderer, _: &Camera, res: &ResourceManager) {
+    fn draw(&self, renderer: &mut Renderer, c: &Camera, res: &ResourceManager) {
         let button_color = Color::RGB(255, 153, 0);
         renderer.canvas.set_draw_color(button_color);
         renderer
@@ -157,7 +158,24 @@ impl Drawable for Player {
 
 impl Drawable for PositionedText<'_> {
     fn draw(&self, renderer: &mut Renderer, _: &Camera, res: &ResourceManager) {
-        // let surface = renderer.get_text_surface(self.text, res.font)
+        let creator = &renderer.texture_creator;
+        let texture = res
+            .font()
+            .render(self.text)
+            .blended(self.color)
+            .map_err(|err| err.to_string())
+            .and_then(|surface| {
+                creator
+                .create_texture_from_surface(surface)
+                    .map_err(|err| err.to_string())
+            })
+            .unwrap_or_else(|err| {
+                panic_with_messagebox(&err);
+            });
+
+        let TextureQuery { width, height, .. } = texture.query();
+        let target = self.aligned_rect(width, height);
+        renderer.canvas.copy(&texture, None, Some(target)).unwrap();
     }
 }
 

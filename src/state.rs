@@ -7,8 +7,8 @@ use crate::resource::*;
 use crate::utility::*;
 
 use sdl2::pixels::Color;
-use sdl2::{event::Event, EventPump};
 use sdl2::Sdl;
+use sdl2::{event::Event, EventPump};
 
 pub struct GameState<'a> {
     pub should_exit: bool,
@@ -47,10 +47,7 @@ pub enum Activity {
 impl Activity {
     pub fn new_game(resources: &ResourceManager) -> Activity {
         let player = Player::new(200, 200);
-        let camera = Camera::new(
-            player.position_x(),
-            player.position_y(),
-        );
+        let camera = Camera::new(player.position_x(), player.position_y());
 
         Activity::Game { player, camera }
     }
@@ -110,7 +107,10 @@ impl Score {
 }
 
 impl GameState<'_> {
-    pub fn new<'a>(resources: ResourceManager<'a>, context: &Sdl) -> Result<GameState<'a>> {
+    pub fn new<'a>(
+        resources: ResourceManager<'a>,
+        context: &Sdl,
+    ) -> Result<GameState<'a>> {
         let event_pump = context.event_pump()?;
         let activity = Activity::new_main_menu(&resources);
 
@@ -194,6 +194,7 @@ impl GameState<'_> {
 
         match &self.activity {
             Activity::Game { player, camera, .. } => {
+                // TODO: remove tests
                 let frame = self.frame % 60;
                 {
                     let texture = if frame > 30 {
@@ -203,12 +204,20 @@ impl GameState<'_> {
                     };
                     renderer.canvas.copy(&texture, None, None).unwrap();
                 }
-         
                 player.draw(renderer, &camera, &self.resources());
-         
             }
             Activity::Editor { camera, .. } => {
                 draw_grid(renderer, &camera);
+                // TODO: remove tests
+                let (x,y) = self.controller.mouse().pos();
+                let text = PositionedText::new(
+                    "TEST",
+                    (x, y),
+                    TextAlignment::Center,
+                    0.25,
+                    Color::RGB(255, 255, 255),
+                );
+                text.draw(renderer, camera, &self.resources);
             }
             Activity::MainMenu { buttons } => {
                 for button in buttons {
