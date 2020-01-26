@@ -30,6 +30,7 @@ pub enum TextAlignment {
     Center,
     Left,
     Right,
+    TotalCenter,
 }
 
 pub struct PositionedText<'a> {
@@ -45,13 +46,13 @@ pub trait Drawable {
 }
 
 impl PositionedText<'_> {
-    pub fn new<'a>(
-        text: &'a str,
+    pub fn new(
+        text: &str,
         position: (i32, i32),
         alignment: TextAlignment,
         scale: f64,
         color: Color,
-    ) -> PositionedText<'a> {
+    ) -> PositionedText {
         PositionedText {
             text,
             position,
@@ -62,26 +63,22 @@ impl PositionedText<'_> {
     }
 
     fn aligned_rect(&self, texture_w: u32, texture_h: u32) -> Rect {
-        let (x0, y) = self.position;
-        let width = (texture_w as f64 * self.scale) as i32;
-        let height = (texture_h as f64 * self.scale) as i32;
-        let real_x = match self.alignment {
-            TextAlignment::Center => {
-                x0 - width / 2
-            },
-            TextAlignment::Left => {
-                x0
-            },
-            TextAlignment::Right => {
-                x0 - width
-            }
+        let (x0, y0) = self.position;
+        let width = (f64::from(texture_w) * self.scale) as i32;
+        let height = (f64::from(texture_h) * self.scale) as i32;
+        let (x, y) = match self.alignment {
+            TextAlignment::Center => (x0 - width / 2, y0),
+            TextAlignment::Left => (x0, y0),
+            TextAlignment::Right => (x0 - width, y0),
+            TextAlignment::TotalCenter => (x0 - width / 2, y0 - height / 2),
         };
-        Rect::new(real_x, y, width as u32, height as u32)
+
+        Rect::new(x, y, width as u32, height as u32)
     }
 }
 
 impl Renderer {
-    pub fn new<'a>(canvas: Canvas) -> Renderer {
+    pub fn new(canvas: Canvas) -> Renderer {
         let creator = canvas.texture_creator();
         Renderer {
             canvas,
@@ -101,42 +98,65 @@ impl Camera {
         const CENTER_X: i32 = SCREEN_WIDTH as i32 / 2;
         const CENTER_Y: i32 = SCREEN_HEIGHT as i32 / 2;
 
-        Camera {
-            x: CENTER_X - x,
-            y: CENTER_Y - y,
-        }
-    }
-
-    pub fn pos(&self) -> (i32, i32) {
-        (self.x, self.y)
+        Camera { x: x, y: y }
     }
 
     pub fn shift(&mut self, amount: (i32, i32)) {
         self.x += amount.0;
         self.y += amount.1;
 
+        const MAX_X: i32 =
+            (LEVEL_WIDTH as u32 * BLOCK_SIZE - SCREEN_WIDTH) as i32;
+
+        const MAX_Y: i32 =
+            (LEVEL_HEIGHT as u32 * BLOCK_SIZE - SCREEN_HEIGHT) as i32;
+
         if self.x <= 0 {
             self.x = 0;
+        } else if self.x > MAX_X {
+            self.x = MAX_X;
         }
 
         if self.y <= 0 {
             self.y = 0;
+        } else if self.y > MAX_Y {
+            self.y = MAX_Y;
         }
     }
 
-    pub fn to_camera_coordinates(&self, coords: (i32, i32)) -> (i32, i32) {
-        (coords.0 - self.x, coords.1 - self.y)
+    pub fn move_rect(&self, rect: &mut Rect) {
+        rect.offset(-self.x, -self.y);
+    }
+
+    pub fn translate_coords(&self, coords: (i32, i32)) -> (i32, i32) {
+        (coords.0 + self.x, coords.1 + self.y)
     }
 }
 
 impl Drawable for Button {
-    fn draw(&self, renderer: &mut Renderer, c: &Camera, res: &ResourceManager) {
+    fn draw(
+        &self,
+        renderer: &mut Renderer,
+        cam: &Camera,
+        res: &ResourceManager,
+    ) {
         let button_color = Color::RGB(255, 153, 0);
         renderer.canvas.set_draw_color(button_color);
         renderer
             .canvas
             .fill_rect(*self.rect())
             .expect("Failed to draw a button!");
+
+        let center = self.rect().center();
+        let text = PositionedText::new(
+            self.text(),
+            (center.x(), center.y()),
+            TextAlignment::TotalCenter,
+            0.25,
+            Color::RGB(255, 255, 255),
+        );
+
+        text.draw(renderer, dbg!(cam), res);
     }
 }
 
@@ -157,7 +177,12 @@ impl Drawable for Player {
 }
 
 impl Drawable for PositionedText<'_> {
-    fn draw(&self, renderer: &mut Renderer, _: &Camera, res: &ResourceManager) {
+    fn draw(
+        &self,
+        renderer: &mut Renderer,
+        cam: &Camera,
+        res: &ResourceManager,
+    ) {
         let creator = &renderer.texture_creator;
         let texture = res
             .font()
@@ -166,7 +191,7 @@ impl Drawable for PositionedText<'_> {
             .map_err(|err| err.to_string())
             .and_then(|surface| {
                 creator
-                .create_texture_from_surface(surface)
+                    .create_texture_from_surface(surface)
                     .map_err(|err| err.to_string())
             })
             .unwrap_or_else(|err| {
@@ -174,7 +199,8 @@ impl Drawable for PositionedText<'_> {
             });
 
         let TextureQuery { width, height, .. } = texture.query();
-        let target = self.aligned_rect(width, height);
+        let mut target = self.aligned_rect(width, height);
+        cam.move_rect(&mut target);
         renderer.canvas.copy(&texture, None, Some(target)).unwrap();
     }
 }

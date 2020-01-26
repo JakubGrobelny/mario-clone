@@ -146,8 +146,15 @@ impl GameState<'_> {
                 player.apply_speed();
             }
             Activity::Editor { camera, .. } => {
-                let scroll = self.controller.mouse().scroll();
-                camera.shift((scroll * -10, 0));
+                let x_movement = self.controller.mouse().scroll() * -100;
+                let y_movement = if self.controller.is_key_pressed(Key::Up) {
+                    -10
+                } else if self.controller.is_key_pressed(Key::Down) {
+                    10
+                } else {
+                    0
+                };
+                camera.shift((x_movement, y_movement));
             }
             Activity::MainMenu { buttons } => {
                 let mouse_pos = self.controller.mouse().pos();
@@ -209,7 +216,8 @@ impl GameState<'_> {
             Activity::Editor { camera, .. } => {
                 draw_grid(renderer, &camera);
                 // TODO: remove tests
-                let (x,y) = self.controller.mouse().pos();
+                let (x, y) =
+                    camera.translate_coords(self.controller.mouse().pos());
                 let text = PositionedText::new(
                     "TEST",
                     (x, y),
