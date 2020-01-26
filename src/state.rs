@@ -7,9 +7,8 @@ use crate::resource::*;
 use crate::utility::*;
 
 use sdl2::pixels::Color;
-use sdl2::ttf::Sdl2TtfContext;
-use sdl2::Sdl;
 use sdl2::{event::Event, EventPump};
+use sdl2::Sdl;
 
 pub struct GameState<'a> {
     pub should_exit: bool,
@@ -51,19 +50,15 @@ impl Activity {
         let camera = Camera::new(
             player.position_x(),
             player.position_y(),
-            resources.config().window_width(),
-            resources.config().window_height(),
         );
 
         Activity::Game { player, camera }
     }
 
     pub fn new_editor(resources: &ResourceManager) -> Activity {
-        let scr_h = resources.config().window_height();
-        let scr_w = resources.config().window_width();
-        let cam_x = scr_w as i32 / 2;
-        let cam_y = scr_h as i32 / 2;
-        let camera = Camera::new(cam_x, cam_y, scr_w, scr_h);
+        let cam_x = SCREEN_WIDTH as i32 / 2;
+        let cam_y = SCREEN_HEIGHT as i32 / 2;
+        let camera = Camera::new(cam_x, cam_y);
         Activity::Editor {
             camera,
             paused: false,
@@ -101,8 +96,6 @@ impl Activity {
             BUTTON_WIDTH,
             BUTTON_HEIGHT,
             BUTTON_DISTANCE,
-            resources.config().window_width(),
-            resources.config().window_height(),
             (0, BUTTONS_Y_OFFSET),
         );
 
@@ -117,11 +110,7 @@ impl Score {
 }
 
 impl GameState<'_> {
-    pub fn new<'a>(
-        context: &'a Sdl,
-        ttf: &'a Sdl2TtfContext,
-    ) -> Result<GameState<'a>> {
-        let resources = ResourceManager::new(ttf)?;
+    pub fn new<'a>(resources: ResourceManager<'a>, context: &Sdl) -> Result<GameState<'a>> {
         let event_pump = context.event_pump()?;
         let activity = Activity::new_main_menu(&resources);
 
@@ -179,6 +168,8 @@ impl GameState<'_> {
     pub fn update(&mut self) {
         if self.frame > 1_024 {
             self.frame = 0;
+        } else {
+            self.frame += 1;
         }
 
         let events: Vec<_> = self.event_pump.poll_iter().collect();
@@ -197,13 +188,24 @@ impl GameState<'_> {
         self.update_activity();
     }
 
-    pub fn draw(&self, renderer: &mut Renderer) {
+    pub fn draw(&mut self, renderer: &mut Renderer) {
         renderer.canvas.set_draw_color(Color::RGB(88, 100, 255));
         renderer.canvas.clear();
 
         match &self.activity {
             Activity::Game { player, camera, .. } => {
+                let frame = self.frame % 60;
+                {
+                    let texture = if frame > 30 {
+                        self.resources.texture("test1")
+                    } else {
+                        self.resources.texture("test2")
+                    };
+                    renderer.canvas.copy(&texture, None, None).unwrap();
+                }
+         
                 player.draw(renderer, &camera, &self.resources());
+         
             }
             Activity::Editor { camera, .. } => {
                 draw_grid(renderer, &camera);

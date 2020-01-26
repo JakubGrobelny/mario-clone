@@ -1,3 +1,4 @@
+use crate::render::*;
 use crate::state::*;
 
 use sdl2::rect::Rect;
@@ -12,26 +13,31 @@ pub trait InterfaceElement {
     fn on_click(&self, game_state: &mut GameState);
 }
 
+type ButtonDescr<'a> = Vec<(&'a str, fn(&mut GameState))>;
+
 pub fn make_button_column(
-    buttons: Vec<(&str, fn(&mut GameState))>,
+    buttons: ButtonDescr,
     width: u32,
     height: u32,
     separation: u32,
-    scr_width: u32,
-    scr_height: u32,
     shift: (i32, i32),
 ) -> Vec<Button> {
     let num_of_buttons = buttons.len() as u32;
-    let free_height = scr_height
+    let free_height = SCREEN_HEIGHT
         - height * num_of_buttons
         - separation * (num_of_buttons - 1);
     let y_offset = free_height as i32 / 2;
-    let x = (scr_width - width) as i32 / 2 + shift.0;
+    let x = (SCREEN_WIDTH - width) as i32 / 2 + shift.0;
 
-    buttons.into_iter().enumerate().map(|(i, (text, on_click))| {
-        let y = y_offset + i as i32 * (height + separation) as i32 + shift.1;
-        Button::new(String::from(text), x, y, width, height, on_click)
-    }).collect()
+    buttons
+        .into_iter()
+        .enumerate()
+        .map(|(i, (text, on_click))| {
+            let y =
+                y_offset + i as i32 * (height + separation) as i32 + shift.1;
+            Button::new(String::from(text), x, y, width, height, on_click)
+        })
+        .collect()
 }
 
 impl Button {
@@ -57,7 +63,6 @@ impl Button {
     pub fn rect(&self) -> &Rect {
         &self.rect
     }
-
 }
 
 impl InterfaceElement for Button {

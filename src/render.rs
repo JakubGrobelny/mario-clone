@@ -7,7 +7,7 @@ use crate::utility::*;
 
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
-use sdl2::render::{Texture, TextureCreator};
+use sdl2::render::TextureCreator;
 use sdl2::surface::Surface;
 use sdl2::ttf::Font;
 use sdl2::video::WindowContext;
@@ -16,23 +16,19 @@ use std::collections::HashMap;
 
 type Canvas = sdl2::render::Canvas<sdl2::video::Window>;
 
+pub const SCREEN_WIDTH : u32 = 1280;
+pub const SCREEN_HEIGHT : u32 = 720;
+
 pub struct Renderer<'a> {
     pub canvas: Canvas,
     pub texture_creator: TextureCreator<WindowContext>,
     strings: HashMap<String, Surface<'a>>,
 }
 
-pub struct ManagedTexture<'a, T> {
-    creator: &'a TextureCreator<T>,
-    texture: Texture<'a>,
-}
-
 #[derive(Debug)]
 pub struct Camera {
     x: i32,
-    y: i32,
-    screen_width: u32,
-    screen_height: u32,
+    y: i32
 }
 
 pub enum TextAlignment {
@@ -95,20 +91,18 @@ impl Renderer<'_> {
 
 impl Default for Camera {
     fn default() -> Camera {
-        Camera::new(0, 0, 0, 0)
+        Camera::new(0, 0)
     }
 }
 
 impl Camera {
-    pub fn new(x: i32, y: i32, scr_w: u32, scr_h: u32) -> Camera {
-        let center_x = scr_w as i32 / 2;
-        let center_y = scr_h as i32 / 2;
+    pub fn new(x: i32, y: i32) -> Camera {
+        const CENTER_X : i32 = SCREEN_WIDTH as i32 / 2;
+        const CENTER_Y : i32 = SCREEN_HEIGHT as i32 / 2;
 
         Camera {
-            x: center_x - x,
-            y: center_y - y,
-            screen_width: scr_w,
-            screen_height: scr_h,
+            x: CENTER_X - x,
+            y: CENTER_Y - y
         }
     }
 
@@ -127,14 +121,6 @@ impl Camera {
         if self.y <= 0 {
             self.y = 0;
         }
-    }
-
-    pub fn screen_width(&self) -> u32 {
-        self.screen_width
-    }
-
-    pub fn screen_height(&self) -> u32 {
-        self.screen_height
     }
 
     pub fn to_camera_coordinates(&self, coords: (i32, i32)) -> (i32, i32) {
@@ -177,12 +163,12 @@ impl Drawable for PositionedText<'_> {
 
 pub fn draw_grid(renderer: &mut Renderer, camera: &Camera) {
     renderer.canvas.set_draw_color(Color::RGB(0, 0, 0));
-    let cols = (camera.x + camera.screen_width as i32) / BLOCK_SIZE as i32;
+    let cols = (camera.x + SCREEN_WIDTH as i32) / BLOCK_SIZE as i32;
 
     for col in 0..=cols {
         let x = col * BLOCK_SIZE as i32 - camera.x;
         let from = Point::new(x, 0);
-        let to = Point::new(x, camera.screen_height as i32);
+        let to = Point::new(x, SCREEN_HEIGHT as i32);
         renderer.canvas.draw_line(from, to).unwrap();
     }
 
@@ -190,7 +176,7 @@ pub fn draw_grid(renderer: &mut Renderer, camera: &Camera) {
     for row in 0..=rows {
         let y = row * BLOCK_SIZE as i32 - camera.y;
         let from = Point::new(0, y);
-        let to = Point::new(camera.screen_width as i32, y);
+        let to = Point::new(SCREEN_WIDTH as i32, y);
         renderer.canvas.draw_line(from, to).unwrap();
     }
 }

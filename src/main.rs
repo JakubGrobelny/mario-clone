@@ -2,7 +2,6 @@ extern crate sdl2;
 extern crate serde_json;
 
 mod block;
-mod config;
 mod controller;
 mod hitbox;
 mod level;
@@ -17,6 +16,7 @@ mod interface;
 use state::*;
 use render::*;
 use utility::*;
+use resource::*;
 
 use sdl2::pixels::Color;
 
@@ -31,19 +31,16 @@ fn main() {
     }
 }
 
-fn run() -> Result<()> {
-    let context = sdl2::init()?;
-    let video = context.video()?;
+fn run() -> Result<()> {    
     let frame_time : Duration = Duration::from_secs(1) / FPS;
+    let context = sdl2::init()?;
     let ttf_context = sdl2::ttf::init()?;
-
-    let mut game_state = GameState::new(&context, &ttf_context)?;
-
-    let window = video
+    
+    let window = context.video()?
         .window(
             "mario game",
-            game_state.resources().config().window_width(),
-            game_state.resources().config().window_height(),
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
         )
         .position_centered()
         .build()
@@ -55,6 +52,11 @@ fn run() -> Result<()> {
         .map_err(|e| e.to_string())?;
 
     let mut renderer = Renderer::new(canvas);
+    let texture_creator = renderer.canvas.texture_creator();
+    let texture_cache = TextureCache::new(&texture_creator);
+    let resource_manager = ResourceManager::new(texture_cache, &ttf_context)?;
+    let mut game_state = GameState::new(resource_manager, &context)?;
+
     renderer.canvas.set_draw_color(Color::RGB(0, 0, 0));
     renderer.canvas.clear();
     renderer.canvas.present();
