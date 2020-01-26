@@ -10,6 +10,9 @@ use sdl2::rect::{Point, Rect};
 use sdl2::render::{Texture, TextureCreator, TextureQuery};
 use sdl2::video::WindowContext;
 
+use std::convert::TryInto;
+use std::fmt::Debug;
+
 type Canvas = sdl2::render::Canvas<sdl2::video::Window>;
 
 pub const SCREEN_WIDTH: u32 = 1280;
@@ -41,8 +44,64 @@ pub struct PositionedText<'a> {
     color: Color,
 }
 
+pub struct TextBuilder<'a> {
+    text: &'a str,
+    position: Option<(i32, i32)>,
+    alignment: Option<TextAlignment>,
+    scale: Option<f64>,
+    color: Option<Color>,
+}
+
 pub trait Drawable {
     fn draw(&self, canvas: &mut Renderer, cam: &Camera, res: &ResourceManager);
+}
+
+impl<'a> TextBuilder<'a> {
+    pub fn new(text: &str) -> TextBuilder {
+        TextBuilder {
+            text,
+            position: None,
+            alignment: None,
+            scale: None,
+            color: None,
+        }
+    }
+
+    pub fn position<A, B>(mut self, x: A, y: B) -> TextBuilder<'a>
+    where
+        A: TryInto<i32>,
+        B: TryInto<i32>,
+    {
+        let x : i32 = x.try_into().unwrap_or(0);
+        let y : i32 = y.try_into().unwrap_or(0);
+        self.position = Some((x as i32, y as i32));
+        self
+    }
+
+    pub fn alignment(mut self, align: TextAlignment) -> TextBuilder<'a> {
+        self.alignment = Some(align);
+        self
+    }
+
+    pub fn scale(mut self, scale: f64) -> TextBuilder<'a> {
+        self.scale = Some(scale);
+        self
+    }
+
+    pub fn color(mut self, color: Color) -> TextBuilder<'a> {
+        self.color = Some(color);
+        self
+    }
+
+    pub fn build(self) -> PositionedText<'a> {
+        PositionedText::new(
+            self.text,
+            self.position.unwrap_or((0, 0)),
+            self.alignment.unwrap_or(TextAlignment::Left),
+            self.scale.unwrap_or(1.0),
+            self.color.unwrap_or(Color::RGB(255, 255, 255)),
+        )
+    }
 }
 
 impl PositionedText<'_> {
@@ -89,7 +148,6 @@ impl Renderer {
     pub fn clear(&mut self, color: &Color) {
         self.canvas.set_draw_color(*color);
         self.canvas.clear();
-        self.canvas.present();
     }
 }
 
@@ -189,6 +247,10 @@ impl Drawable for PositionedText<'_> {
         cam: &Camera,
         res: &ResourceManager,
     ) {
+        if self.text.is_empty() {
+            return;
+        }
+
         let creator = &renderer.texture_creator;
         let texture = res
             .font()

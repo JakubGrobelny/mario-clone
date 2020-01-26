@@ -64,6 +64,7 @@ fn run() -> Result<()> {
     let mut game_state = GameState::new(resources, &context, text_input)?;
 
     renderer.clear(&Color::RGB(255, 255, 255));
+    renderer.canvas.present();
 
     'running: loop {
         let now = SystemTime::now();
