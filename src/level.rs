@@ -16,7 +16,7 @@ pub struct Level {
 }
 
 #[derive(Deserialize, Serialize)]
-struct LevelJSON {
+pub struct LevelJSON {
     theme: LevelTheme,
     blocks: Vec<BlockType>,
 }
@@ -26,6 +26,12 @@ enum LevelTheme {
     Underground,
     Day,
     Night,
+}
+
+impl Default for Level {
+    fn default() -> Level {
+        Level::new()
+    }
 }
 
 impl From<LevelJSON> for Level {
@@ -49,33 +55,18 @@ impl From<LevelJSON> for Level {
 }
 
 impl Level {
-    pub fn new(path: &Path) -> Result<Level> {
-        let file_contents = fs::read_to_string(path)?;
-        let level_json: LevelJSON = serde_json::from_str(&file_contents)?;
-        Ok(Level::from(level_json))
+    pub fn new() -> Level {
+        let mut blocks = [[BlockType::default(); LEVEL_WIDTH]; LEVEL_HEIGHT];
+        const GROUND_HEIGHT : usize = 3;
+        for col in 0..LEVEL_WIDTH {
+            for row in LEVEL_HEIGHT-GROUND_HEIGHT..LEVEL_HEIGHT {
+                blocks[row][col] = BlockType::Bricks;
+            }
+        }
+
+        Level {
+            blocks,
+            theme: LevelTheme::Day,
+        }
     }
-}
-
-pub fn load_levels(res_path: &Path) -> Result<Vec<(String, Level)>> {
-    #[derive(Deserialize, Serialize)]
-    struct LevelList {
-        levels: Vec<String>,
-    }
-
-    let levels_path = res_path.join("levels/");
-    let level_list_str = fs::read_to_string(levels_path.join("levels.json"))?;
-    let level_list: LevelList = serde_json::from_str(&level_list_str)?;
-
-    Ok(level_list
-        .levels
-        .into_iter()
-        .map(|name| {
-            let path = levels_path.join(format!("{}.lvl", name));
-            let level = Level::new(path.as_path()).unwrap_or_else(|_| {
-                let error_msg = format!("Failed to load level '{}'!", name);
-                panic_with_messagebox(&error_msg);
-            });
-            (name, level)
-        })
-        .collect())
 }

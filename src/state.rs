@@ -5,6 +5,7 @@ use crate::player::*;
 use crate::render::*;
 use crate::resource::*;
 use crate::utility::*;
+use crate::level::*;
 
 use sdl2::keyboard::{Keycode, TextInputUtil};
 use sdl2::pixels::Color;
@@ -44,8 +45,8 @@ pub enum Activity {
     },
     Editor {
         camera: Camera,
-        // level: Level,
-        // level_name: String,
+        level: Box<Level>,
+        level_name: String,
         paused: bool,
     },
     FileInputScreen,
@@ -99,10 +100,13 @@ impl Activity {
         Activity::Game { player, camera }
     }
 
-    pub fn new_editor(resources: &ResourceManager, file: &str) -> Activity {
+    pub fn new_editor(resources: &ResourceManager, name: &str) -> Activity {
+        let level = Box::new(resources.load_level(name).unwrap_or_default());
         Activity::Editor {
             camera: Camera::default(),
             paused: false,
+            level,
+            level_name: String::from(name),
         }
     }
 
@@ -120,9 +124,9 @@ impl Activity {
         }
 
         const BUTTON_WIDTH: u32 = 300;
-        const BUTTON_HEIGHT: u32 = 120;
+        const BUTTON_HEIGHT: u32 = 90;
         const BUTTON_DISTANCE: u32 = 20;
-        const BUTTONS_Y_OFFSET: i32 = 100;
+        const BUTTONS_Y_OFFSET: i32 = 150;
 
         let button_info = vec![
             ("START", start_button_on_click as fn(&mut GameState)),
@@ -300,12 +304,21 @@ impl GameState<'_> {
             }
             Activity::FileInputScreen => {
                 renderer.clear(&Color::RGB(0, 0, 0));
+                let prompt =
+                    TextBuilder::new("Level name (without extension):")
+                        .position(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 100)
+                        .scale(0.25)
+                        .alignment(TextAlignment::TotalCenter)
+                        .build();
+
                 let input = self.text_input.text();
-                let text = TextBuilder::new(input)
+                let text = TextBuilder::new(&input)
                     .position(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
                     .alignment(TextAlignment::TotalCenter)
                     .scale(0.2)
                     .build();
+
+                prompt.draw(renderer, &Camera::default(), &self.resources);
                 text.draw(renderer, &Camera::default(), &self.resources);
             }
         }

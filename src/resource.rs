@@ -1,13 +1,16 @@
 use std::borrow::Borrow;
 use std::collections::HashMap;
+use std::fs;
 use std::hash::Hash;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use sdl2::image::LoadTexture;
 use sdl2::render::{Texture, TextureCreator};
-use sdl2::ttf::{Sdl2TtfContext, Font};
+use sdl2::ttf::{Font, Sdl2TtfContext};
 use sdl2::video::WindowContext;
+
+use serde::{Deserialize, Serialize};
 
 use crate::level::*;
 use crate::utility::*;
@@ -17,7 +20,6 @@ pub type TextureCache<'a, T> =
 
 pub struct ResourceManager<'a> {
     res_path: PathBuf,
-    levels: Vec<(String, Level)>,
     font: Font<'a, 'static>,
     textures: TextureCache<'a, WindowContext>,
 }
@@ -79,16 +81,13 @@ impl ResourceManager<'_> {
         ttf: &'a Sdl2TtfContext,
     ) -> Result<ResourceManager<'a>> {
         let res_path = get_base_path()?.join("resources/");
-        let levels = load_levels(&res_path.as_path())?;
 
-        const POINT_SIZE: u16 = 128;
         let font_path = res_path.join("font.ttf");
-        let mut font = ttf.load_font(font_path, POINT_SIZE)?;
+        let mut font = ttf.load_font(font_path, 128)?;
         font.set_style(sdl2::ttf::FontStyle::NORMAL);
 
         Ok(ResourceManager {
             res_path,
-            levels,
             font,
             textures: cache,
         })
@@ -109,5 +108,54 @@ impl ResourceManager<'_> {
                     name
                 ));
             })
+    }
+
+    pub fn load_level(&self, name: &str) -> Option<Level> {
+        let path = self.res_path.join(format!("levels/{}.lvl", name));
+
+        if !path.exists() {
+            return None;
+        }
+
+        fs::read_to_string(path)
+            .map_err(|err| err.to_string())
+            .and_then(|contents| {
+                serde_json::from_str::<LevelJSON>(&contents)
+                    .map_err(|err| err.to_string())
+            })
+            .map_err(|err| panic_with_messagebox(&err))
+            .map(|lvl| lvl.into())
+            .ok()
+    }
+
+    pub fn load_listed_levels(&self) -> Vec<(String, Level)> {
+        #[derive(Deserialize, Serialize)]
+        struct LevelList {
+            levels: Vec<String>,
+        }
+
+        let levels_path = self.res_path.join("levels/");
+        let level_list: LevelList =
+            fs::read_to_string(levels_path.join("levels.json"))
+                .map_err(|err| err.to_string())
+                .and_then(|contents| {
+                    serde_json::from_str(&contents)
+                        .map_err(|err| err.to_string())
+                })
+                .unwrap_or_else(|err| panic_with_messagebox(&err));
+
+        level_list
+            .levels
+            .into_iter()
+            .map(|name| {
+                let level = self.load_level(&name).unwrap_or_else(|| {
+                    panic_with_messagebox(&format!(
+                        "Level {} does not exist!",
+                        name
+                    ))
+                });
+                (name, level)
+            })
+            .collect()
     }
 }
