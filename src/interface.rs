@@ -3,25 +3,24 @@ use crate::state::*;
 
 use sdl2::rect::Rect;
 
-pub struct Button {
+// pub type ButtonCallback =
+//     fn(&mut SharedGameData, &mut Activity) -> Option<Activity>;
+
+pub struct Button<Effect> {
     text: String,
     rect: Rect,
-    pub effect: fn(&mut GameState),
+    pub effect: Effect,
 }
 
-pub trait InterfaceElement {
-    fn on_click(&self, game_state: &mut GameState);
-}
+type ButtonsInfo<'a, Effect> = Vec<(&'a str, Effect)>;
 
-type ButtonDescr<'a> = Vec<(&'a str, fn(&mut GameState))>;
-
-pub fn make_button_column(
-    buttons: ButtonDescr,
+pub fn make_button_column<T>(
+    buttons: ButtonsInfo<T>,
     width: u32,
     height: u32,
     separation: u32,
     shift: (i32, i32),
-) -> Vec<Button> {
+) -> Vec<Button<T>> {
     let num_of_buttons = buttons.len() as u32;
     let free_height = SCREEN_HEIGHT
         - height * num_of_buttons
@@ -40,15 +39,15 @@ pub fn make_button_column(
         .collect()
 }
 
-impl Button {
+impl<T> Button<T> {
     pub fn new(
         text: String,
         x: i32,
         y: i32,
         width: u32,
         height: u32,
-        effect: fn(&mut GameState),
-    ) -> Button {
+        effect: T,
+    ) -> Button<T> {
         Button {
             text,
             rect: Rect::new(x, y, width, height),
@@ -65,8 +64,6 @@ impl Button {
     }
 }
 
-impl InterfaceElement for Button {
-    fn on_click(&self, game_state: &mut GameState) {
-        (self.effect)(game_state);
-    }
+pub trait OnClick<Arg, Val> {
+    fn on_click(&self, arg: Arg) -> Val;
 }

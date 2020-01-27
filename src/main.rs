@@ -14,6 +14,8 @@ mod resource;
 mod state;
 mod interface;
 mod editor;
+mod game;
+mod menu;
 
 use utility::*;
 use state::*;

@@ -2,6 +2,8 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::mouse::MouseButton;
 
+use vector2d::Vector2D;
+
 pub enum KeyEventType {
     Down,
     Up,
@@ -55,6 +57,35 @@ impl From<Keycode> for Key {
             Keycode::Return => Key::Enter,
             _ => Key::Invalid,
         }
+    }
+}
+
+impl From<&Controller> for Vector2D<i32> {
+    fn from(controller: &Controller) -> Vector2D<i32> {
+        let x = if controller.is_key_pressed(Key::Left) {
+            -1
+        } else if controller.is_key_pressed(Key::Right) {
+            1
+        } else {
+            0
+        };
+
+        let y = if controller.is_key_pressed(Key::Up) {
+            -1
+        } else if controller.is_key_pressed(Key::Down) {
+            1
+        } else {
+            0
+        };
+
+        Vector2D::new(x, y)
+    }
+}
+
+impl From<&Controller> for Vector2D<f64> {
+    fn from(controller: &Controller) -> Vector2D<f64> {
+        let i_vec = Vector2D::<i32>::from(controller);
+        Vector2D::new(f64::from(i_vec.x), f64::from(i_vec.y))
     }
 }
 
@@ -126,7 +157,7 @@ impl Controller {
                 }
                 Event::MouseWheel { y, .. } => {
                     self.mouse.scroll = *y;
-                },
+                }
                 _ => (),
             }
         }

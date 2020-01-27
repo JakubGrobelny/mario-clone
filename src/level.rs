@@ -12,7 +12,7 @@ pub const LEVEL_WIDTH: usize = 220;
 #[derive(Clone)]
 pub struct Level {
     theme: LevelTheme,
-    blocks: [[BlockType; LEVEL_WIDTH]; LEVEL_HEIGHT],
+    blocks: Box<[[BlockType; LEVEL_WIDTH]; LEVEL_HEIGHT]>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -42,7 +42,8 @@ impl From<LevelJSON> for Level {
             );
         }
 
-        let mut blocks = [[BlockType::default(); LEVEL_WIDTH]; LEVEL_HEIGHT];
+        let mut blocks =
+            Box::new([[BlockType::default(); LEVEL_WIDTH]; LEVEL_HEIGHT]);
         for (i, block) in json.blocks.into_iter().enumerate() {
             let row = i / LEVEL_HEIGHT;
             let col = i % LEVEL_WIDTH;
@@ -58,7 +59,8 @@ impl From<LevelJSON> for Level {
 
 impl Level {
     pub fn new() -> Level {
-        let mut blocks = [[BlockType::default(); LEVEL_WIDTH]; LEVEL_HEIGHT];
+        let mut blocks =
+            Box::new([[BlockType::default(); LEVEL_WIDTH]; LEVEL_HEIGHT]);
         const GROUND_HEIGHT: usize = 3;
         for col in 0..LEVEL_WIDTH {
             for row in LEVEL_HEIGHT - GROUND_HEIGHT..LEVEL_HEIGHT {

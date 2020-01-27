@@ -197,7 +197,7 @@ impl Camera {
     }
 }
 
-impl Drawable for Button {
+impl<T> Drawable for Button<T> {
     fn draw(
         &self,
         renderer: &mut Renderer,

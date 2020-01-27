@@ -1,8 +1,10 @@
 use crate::controller::*;
 use crate::editor::*;
+use crate::game::*;
 use crate::hitbox::*;
 use crate::interface::*;
 use crate::level::*;
+use crate::menu::*;
 use crate::player::*;
 use crate::render::*;
 use crate::resource::*;
@@ -34,25 +36,11 @@ pub struct TextInput<'a> {
     text: String,
 }
 
-pub struct Score {
-    lives: u32,
-    coins: u32,
-}
-
 pub enum Activity {
-    Game {
-        // current_level: usize,
-        // levels: Vec<(String, Level)>,
-        player: Player,
-        // paused: bool,
-        camera: Camera,
-        score: Score,
-    },
+    Game(Game),
     Editor(Editor),
     FileInputScreen,
-    MainMenu {
-        buttons: Vec<Button>,
-    },
+    MainMenu(MainMenu),
 }
 
 impl TextInput<'_> {
@@ -94,15 +82,7 @@ impl TextInput<'_> {
 
 impl Activity {
     pub fn new_game(resources: &ResourceManager) -> Activity {
-        let player = Player::new(200, 200);
-        let camera = Camera::new(player.position_x(), player.position_y());
-        let score = Score::new();
-
-        Activity::Game {
-            player,
-            camera,
-            score,
-        }
+        Activity::Game(Game::new(resources))
     }
 
     pub fn new_editor(resources: &ResourceManager, name: &str) -> Activity {
@@ -110,44 +90,7 @@ impl Activity {
     }
 
     pub fn new_main_menu(resources: &ResourceManager) -> Activity {
-        fn exit_button_on_click(state: &mut GameState) {
-            state.data.should_exit = true;
-        }
-
-        fn start_button_on_click(state: &mut GameState) {
-            state.activity = Activity::new_game(state.resources());
-        }
-
-        fn editor_button_on_click(state: &mut GameState) {
-            state.activity = Activity::FileInputScreen;
-        }
-
-        const BUTTON_WIDTH: u32 = 300;
-        const BUTTON_HEIGHT: u32 = 90;
-        const BUTTON_DISTANCE: u32 = 20;
-        const BUTTONS_Y_OFFSET: i32 = 150;
-
-        let button_info = vec![
-            ("START", start_button_on_click as fn(&mut GameState)),
-            ("EDITOR", editor_button_on_click),
-            ("EXIT", exit_button_on_click),
-        ];
-
-        let buttons = make_button_column(
-            button_info,
-            BUTTON_WIDTH,
-            BUTTON_HEIGHT,
-            BUTTON_DISTANCE,
-            (0, BUTTONS_Y_OFFSET),
-        );
-
-        Activity::MainMenu { buttons }
-    }
-}
-
-impl Score {
-    pub fn new() -> Score {
-        Score { lives: 3, coins: 0 }
+        Activity::MainMenu(MainMenu::new(resources))
     }
 }
 
@@ -242,11 +185,9 @@ impl GameState<'_> {
     }
 
     fn update_activity(&mut self) {
-        let mut effects: Option<fn(&mut GameState)> = None;
         match &mut self.activity {
-            Activity::Game { player, .. } => {
-                player.accelerate(&self.data.controller);
-                player.apply_speed();
+            Activity::Game(game) => {
+                game.update(&mut self.data);
             }
             activity @ Activity::FileInputScreen => {
                 let reading_text = self.data.text_input.is_active();
@@ -254,7 +195,7 @@ impl GameState<'_> {
                     self.data.text_input.start();
                 } else if self.data.controller.is_key_pressed(Key::Enter) {
                     let file_name = self.data.text_input.end();
-                    std::mem::replace(
+                    replace(
                         activity,
                         Activity::new_editor(&self.data.resources, &file_name),
                     );
@@ -263,24 +204,12 @@ impl GameState<'_> {
             Activity::Editor(editor) => {
                 editor.update(&mut self.data);
             }
-            Activity::MainMenu { buttons } => {
-                if self.data.controller.is_key_pressed(Key::Escape) {
-                    self.data.should_exit = true;
-                }
-                let mouse_pos = self.data.controller.mouse().pos();
-                if self.data.controller.mouse().is_left_button_pressed() {
-                    for button in buttons.iter() {
-                        if mouse_pos.collides(button.rect()) {
-                            effects = Some(button.effect);
-                            break;
-                        }
-                    }
+            Activity::MainMenu(menu) => {
+                let activity = menu.update_and_get_activity(&mut self.data);
+                if let Some(activity) = activity {
+                    replace(&mut self.activity, activity);
                 }
             }
-        }
-
-        if let Some(effect) = effects {
-            effect(self);
         }
     }
 
@@ -289,30 +218,14 @@ impl GameState<'_> {
         renderer.canvas.clear();
 
         match &self.activity {
-            Activity::Game { player, camera, .. } => {
-                // TODO: remove tests
-                let frame = self.frame() % 60;
-                {
-                    let texture = if frame > 30 {
-                        self.data.resources.texture("test1")
-                    } else {
-                        self.data.resources.texture("test2")
-                    };
-                    renderer.canvas.copy(&texture, None, None).unwrap();
-                }
-                player.draw(renderer, &camera, &self.resources());
+            Activity::Game(game) => {
+                game.draw(renderer, &mut self.data);
             }
             Activity::Editor(editor) => {
                 editor.draw(renderer, &mut self.data);
             }
-            Activity::MainMenu { buttons } => {
-                for button in buttons {
-                    button.draw(
-                        renderer,
-                        &Camera::default(),
-                        &self.resources(),
-                    );
-                }
+            Activity::MainMenu(menu) => {
+                menu.draw(renderer, &mut self.data);
             }
             Activity::FileInputScreen => {
                 renderer.clear(&Color::RGB(0, 0, 0));
