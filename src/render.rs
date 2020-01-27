@@ -263,7 +263,7 @@ impl Drawable for PositionedText<'_> {
                     .map_err(|err| err.to_string())
             })
             .unwrap_or_else(|err| {
-                panic_with_messagebox(&err);
+                panic_with_messagebox!("{}", err)
             });
 
         let TextureQuery { width, height, .. } = texture.query();

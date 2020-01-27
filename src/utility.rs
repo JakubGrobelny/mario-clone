@@ -18,13 +18,18 @@ pub fn get_base_path() -> Result<PathBuf> {
     Ok(path)
 }
 
-pub fn panic_with_messagebox(err: &str) -> ! {
-    show_simple_message_box(
-        sdl2::messagebox::MessageBoxFlag::ERROR,
-        "Error!",
-        err,
-        None,
-    )
-    .expect("Failed to display an error popup!");
-    panic!(err.to_string());
+#[macro_export]
+macro_rules! panic_with_messagebox {
+    ($format:expr $( , $args:expr )* ) => {
+        {
+            sdl2::messagebox::show_simple_message_box(
+                sdl2::messagebox::MessageBoxFlag::ERROR,
+                "Error!",
+                &format!($format, $( $args ),*),
+                None,
+            )
+            .expect("Failed to display an error popup!");
+            panic!($format, $( $args ),*)
+        }
+    }
 }

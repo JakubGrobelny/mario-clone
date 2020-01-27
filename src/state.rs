@@ -1,11 +1,12 @@
 use crate::controller::*;
+use crate::editor::*;
 use crate::hitbox::*;
 use crate::interface::*;
+use crate::level::*;
 use crate::player::*;
 use crate::render::*;
 use crate::resource::*;
 use crate::utility::*;
-use crate::level::*;
 
 use sdl2::keyboard::{Keycode, TextInputUtil};
 use sdl2::pixels::Color;
@@ -15,13 +16,17 @@ use sdl2::{event::Event, EventPump};
 use std::mem::replace;
 
 pub struct GameState<'a> {
-    pub should_exit: bool,
-    controller: Controller,
-    resources: ResourceManager<'a>,
     activity: Activity,
     event_pump: EventPump,
-    text_input: TextInput<'a>,
-    frame: u32,
+    data: SharedGameData<'a>,
+}
+
+pub struct SharedGameData<'a> {
+    pub should_exit: bool,
+    pub controller: Controller,
+    pub resources: ResourceManager<'a>,
+    pub text_input: TextInput<'a>,
+    pub frame: u32,
 }
 
 pub struct TextInput<'a> {
@@ -41,14 +46,9 @@ pub enum Activity {
         player: Player,
         // paused: bool,
         camera: Camera,
-        // score: Score,
+        score: Score,
     },
-    Editor {
-        camera: Camera,
-        level: Box<Level>,
-        level_name: String,
-        paused: bool,
-    },
+    Editor(Editor),
     FileInputScreen,
     MainMenu {
         buttons: Vec<Button>,
@@ -96,23 +96,22 @@ impl Activity {
     pub fn new_game(resources: &ResourceManager) -> Activity {
         let player = Player::new(200, 200);
         let camera = Camera::new(player.position_x(), player.position_y());
+        let score = Score::new();
 
-        Activity::Game { player, camera }
+        Activity::Game {
+            player,
+            camera,
+            score,
+        }
     }
 
     pub fn new_editor(resources: &ResourceManager, name: &str) -> Activity {
-        let level = Box::new(resources.load_level(name).unwrap_or_default());
-        Activity::Editor {
-            camera: Camera::default(),
-            paused: false,
-            level,
-            level_name: String::from(name),
-        }
+        Activity::Editor(Editor::new(resources, name))
     }
 
     pub fn new_main_menu(resources: &ResourceManager) -> Activity {
         fn exit_button_on_click(state: &mut GameState) {
-            state.should_exit = true;
+            state.data.should_exit = true;
         }
 
         fn start_button_on_click(state: &mut GameState) {
@@ -152,6 +151,21 @@ impl Score {
     }
 }
 
+impl SharedGameData<'_> {
+    pub fn new<'a>(
+        resources: ResourceManager<'a>,
+        text_input: TextInput<'a>,
+    ) -> SharedGameData<'a> {
+        SharedGameData {
+            should_exit: false,
+            controller: Controller::new(),
+            resources,
+            frame: 0,
+            text_input,
+        }
+    }
+}
+
 impl GameState<'_> {
     pub fn new<'a>(
         resources: ResourceManager<'a>,
@@ -160,35 +174,44 @@ impl GameState<'_> {
     ) -> Result<GameState<'a>> {
         let event_pump = context.event_pump()?;
         let activity = Activity::new_main_menu(&resources);
+        let shared_data = SharedGameData::new(resources, text_input);
 
         Ok(GameState {
-            should_exit: false,
-            controller: Controller::new(),
             event_pump,
-            resources,
             activity,
-            frame: 0,
-            text_input,
+            data: shared_data,
         })
     }
 
     pub fn resources(&self) -> &ResourceManager {
-        &self.resources
+        &self.data.resources
+    }
+
+    pub fn frame(&self) -> u32 {
+        self.data.frame
+    }
+
+    pub fn controller(&self) -> &Controller {
+        &self.data.controller
+    }
+
+    pub fn should_exit(&self) -> bool {
+        self.data.should_exit
     }
 
     pub fn update(&mut self) {
-        if self.frame > 1_024 {
-            self.frame = 0;
+        if self.data.frame > 1_024 {
+            self.data.frame = 0;
         } else {
-            self.frame += 1;
+            self.data.frame += 1;
         }
 
         let events: Vec<_> = self.event_pump.poll_iter().collect();
 
-        self.controller.update(&events);
+        self.data.controller.update(&events);
         self.process_events(&events);
 
-        if self.should_exit {
+        if self.should_exit() {
             return;
         }
 
@@ -199,18 +222,18 @@ impl GameState<'_> {
         for event in events.iter() {
             match event {
                 Event::Quit { .. } => {
-                    self.should_exit = true;
+                    self.data.should_exit = true;
                     break;
                 }
                 Event::TextInput { text, .. } => {
-                    self.text_input.input(text);
+                    self.data.text_input.input(text);
                 }
                 Event::KeyDown {
                     keycode: Some(Keycode::Backspace),
                     ..
                 } => {
-                    if self.text_input.is_active() {
-                        self.text_input.backspace();
+                    if self.data.text_input.is_active() {
+                        self.data.text_input.backspace();
                     }
                 }
                 _ => (),
@@ -222,38 +245,30 @@ impl GameState<'_> {
         let mut effects: Option<fn(&mut GameState)> = None;
         match &mut self.activity {
             Activity::Game { player, .. } => {
-                player.accelerate(&self.controller);
+                player.accelerate(&self.data.controller);
                 player.apply_speed();
             }
             activity @ Activity::FileInputScreen => {
-                let reading_text = self.text_input.is_active();
+                let reading_text = self.data.text_input.is_active();
                 if !reading_text {
-                    self.text_input.start();
-                } else if self.controller.is_key_pressed(Key::Enter) {
-                    let file_name = self.text_input.end();
+                    self.data.text_input.start();
+                } else if self.data.controller.is_key_pressed(Key::Enter) {
+                    let file_name = self.data.text_input.end();
                     std::mem::replace(
                         activity,
-                        Activity::new_editor(&self.resources, &file_name),
+                        Activity::new_editor(&self.data.resources, &file_name),
                     );
                 }
             }
-            Activity::Editor { camera, .. } => {
-                let x_movement = self.controller.mouse().scroll() * -100;
-                let y_movement = if self.controller.is_key_pressed(Key::Up) {
-                    -10
-                } else if self.controller.is_key_pressed(Key::Down) {
-                    10
-                } else {
-                    0
-                };
-                camera.shift((x_movement, y_movement));
+            Activity::Editor(editor) => {
+                editor.update(&mut self.data);
             }
             Activity::MainMenu { buttons } => {
-                if self.controller.is_key_pressed(Key::Escape) {
-                    self.should_exit = true;
+                if self.data.controller.is_key_pressed(Key::Escape) {
+                    self.data.should_exit = true;
                 }
-                let mouse_pos = self.controller.mouse().pos();
-                if self.controller.mouse().is_left_button_pressed() {
+                let mouse_pos = self.data.controller.mouse().pos();
+                if self.data.controller.mouse().is_left_button_pressed() {
                     for button in buttons.iter() {
                         if mouse_pos.collides(button.rect()) {
                             effects = Some(button.effect);
@@ -276,22 +291,19 @@ impl GameState<'_> {
         match &self.activity {
             Activity::Game { player, camera, .. } => {
                 // TODO: remove tests
-                let frame = self.frame % 60;
+                let frame = self.frame() % 60;
                 {
                     let texture = if frame > 30 {
-                        self.resources.texture("test1")
+                        self.data.resources.texture("test1")
                     } else {
-                        self.resources.texture("test2")
+                        self.data.resources.texture("test2")
                     };
                     renderer.canvas.copy(&texture, None, None).unwrap();
                 }
                 player.draw(renderer, &camera, &self.resources());
             }
-            Activity::Editor { camera, .. } => {
-                draw_grid(renderer, &camera);
-                // TODO: remove tests
-                let (x, y) =
-                    camera.translate_coords(self.controller.mouse().pos());
+            Activity::Editor(editor) => {
+                editor.draw(renderer, &mut self.data);
             }
             Activity::MainMenu { buttons } => {
                 for button in buttons {
@@ -311,15 +323,15 @@ impl GameState<'_> {
                         .alignment(TextAlignment::TotalCenter)
                         .build();
 
-                let input = self.text_input.text();
+                let input = self.data.text_input.text();
                 let text = TextBuilder::new(&input)
                     .position(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
                     .alignment(TextAlignment::TotalCenter)
                     .scale(0.2)
                     .build();
 
-                prompt.draw(renderer, &Camera::default(), &self.resources);
-                text.draw(renderer, &Camera::default(), &self.resources);
+                prompt.draw(renderer, &Camera::default(), self.resources());
+                text.draw(renderer, &Camera::default(), self.resources());
             }
         }
 

@@ -103,10 +103,7 @@ impl ResourceManager<'_> {
             .to_str()
             .and_then(|path_str| self.textures.load(path_str).ok())
             .unwrap_or_else(|| {
-                panic_with_messagebox(&format!(
-                    "Failed to load texture {}",
-                    name
-                ));
+                panic_with_messagebox!("Failed to load texture {}", name)
             })
     }
 
@@ -123,7 +120,7 @@ impl ResourceManager<'_> {
                 serde_json::from_str::<LevelJSON>(&contents)
                     .map_err(|err| err.to_string())
             })
-            .map_err(|err| panic_with_messagebox(&err))
+            .map_err(|err| panic_with_messagebox!("{}", err))
             .map(|lvl| lvl.into())
             .ok()
     }
@@ -142,17 +139,14 @@ impl ResourceManager<'_> {
                     serde_json::from_str(&contents)
                         .map_err(|err| err.to_string())
                 })
-                .unwrap_or_else(|err| panic_with_messagebox(&err));
+                .unwrap_or_else(|err| panic_with_messagebox!("{}", err));
 
         level_list
             .levels
             .into_iter()
             .map(|name| {
                 let level = self.load_level(&name).unwrap_or_else(|| {
-                    panic_with_messagebox(&format!(
-                        "Level {} does not exist!",
-                        name
-                    ))
+                    panic_with_messagebox!("Level {} does not exist!", name)
                 });
                 (name, level)
             })

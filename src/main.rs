@@ -1,6 +1,8 @@
 extern crate sdl2;
 extern crate serde_json;
 
+#[macro_use]
+mod utility;
 mod block;
 mod controller;
 mod hitbox;
@@ -10,12 +12,12 @@ mod player;
 mod render;
 mod resource;
 mod state;
-mod utility;
 mod interface;
+mod editor;
 
+use utility::*;
 use state::*;
 use render::*;
-use utility::*;
 use resource::*;
 
 use sdl2::pixels::Color;
@@ -27,7 +29,7 @@ const FPS: u32 = 60;
 
 fn main() {
     if let Err(err) = run() {
-        panic_with_messagebox(&err.to_string());
+        panic_with_messagebox!("{}", err);
     }
 }
 
@@ -70,7 +72,7 @@ fn run() -> Result<()> {
         let now = SystemTime::now();
   
         game_state.update();
-        if game_state.should_exit {
+        if game_state.should_exit() {
             break 'running;
         }
 
