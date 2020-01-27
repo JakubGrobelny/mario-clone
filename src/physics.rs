@@ -25,4 +25,3 @@ impl Physics {
         (position.0 + x_shift, position.1 + y_shift)
     }
 }
-

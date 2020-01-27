@@ -1,8 +1,9 @@
-use crate::render::*;
+use crate::controller::*;
 use crate::level::*;
+use crate::render::*;
 use crate::resource::*;
 use crate::state::*;
-use crate::controller::*;
+use crate::block::*;
 
 use vector2d::Vector2D;
 
@@ -25,8 +26,24 @@ impl Editor {
     }
 
     pub fn update(&mut self, game_data: &mut SharedGameData) {
-        let x_movement = game_data.controller.mouse().scroll() * -100;
-        let y_movement = Vector2D::<i32>::from(&game_data.controller).y * 10;
+        const MOVEMENT_MARGIN: i32 = BLOCK_SIZE as i32 - 1;
+        let (x, y) = game_data.controller.mouse().pos();
+        let x_movement = if x < MOVEMENT_MARGIN {
+            -10
+        } else if x > SCREEN_WIDTH as i32 - MOVEMENT_MARGIN {
+            10
+        } else {
+            0
+        };
+
+        let y_movement = if y < MOVEMENT_MARGIN {
+            -10
+        } else if y > SCREEN_HEIGHT as i32 - MOVEMENT_MARGIN {
+            10
+        } else {
+            0
+        };
+
         self.camera.shift((x_movement, y_movement));
     }
 

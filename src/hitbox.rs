@@ -1,4 +1,4 @@
-use sdl2::rect::{Rect, Point};
+use sdl2::rect::{Point, Rect};
 
 pub type Hitbox = Rect;
 
@@ -8,7 +8,7 @@ pub trait CollidableWith<T> {
 
 impl CollidableWith<(i32, i32)> for Hitbox {
     fn collides(&self, (x, y): &(i32, i32)) -> bool {
-        self.contains_point(Point::new(*x,*y))
+        self.contains_point(Point::new(*x, *y))
     }
 }
 

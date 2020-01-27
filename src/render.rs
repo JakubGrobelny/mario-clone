@@ -72,8 +72,8 @@ impl<'a> TextBuilder<'a> {
         A: TryInto<i32>,
         B: TryInto<i32>,
     {
-        let x : i32 = x.try_into().unwrap_or(0);
-        let y : i32 = y.try_into().unwrap_or(0);
+        let x: i32 = x.try_into().unwrap_or(0);
+        let y: i32 = y.try_into().unwrap_or(0);
         self.position = Some((x as i32, y as i32));
         self
     }
@@ -262,9 +262,7 @@ impl Drawable for PositionedText<'_> {
                     .create_texture_from_surface(surface)
                     .map_err(|err| err.to_string())
             })
-            .unwrap_or_else(|err| {
-                panic_with_messagebox!("{}", err)
-            });
+            .unwrap_or_else(|err| panic_with_messagebox!("{}", err));
 
         let TextureQuery { width, height, .. } = texture.query();
         let mut target = self.aligned_rect(width, height);
