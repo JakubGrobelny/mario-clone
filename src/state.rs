@@ -228,7 +228,7 @@ impl GameState<'_> {
                 menu.draw(renderer, &mut self.data);
             }
             Activity::FileInputScreen => {
-                renderer.clear(&Color::RGB(0, 0, 0));
+                renderer.clear(Color::RGB(0, 0, 0));
                 let prompt =
                     TextBuilder::new("Level name (without extension):")
                         .position(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 100)

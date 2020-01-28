@@ -24,6 +24,7 @@ use state::*;
 use utility::*;
 
 use sdl2::pixels::Color;
+use sdl2::render::BlendMode;
 
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
@@ -46,7 +47,8 @@ fn run() -> Result<()> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
+    let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
+    canvas.set_blend_mode(BlendMode::Blend);
 
     let mut renderer = Renderer::new(canvas);
     let texture_creator = renderer.canvas.texture_creator();
@@ -57,7 +59,7 @@ fn run() -> Result<()> {
 
     let mut game_state = GameState::new(resources, &context, text_input)?;
 
-    renderer.clear(&Color::RGB(255, 255, 255));
+    renderer.clear(Color::RGB(255, 255, 255));
     renderer.canvas.present();
 
     'running: loop {

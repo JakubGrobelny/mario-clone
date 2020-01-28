@@ -159,9 +159,16 @@ impl Renderer {
         }
     }
 
-    pub fn clear(&mut self, color: &Color) {
-        self.canvas.set_draw_color(*color);
+    pub fn clear(&mut self, color: Color) {
+        self.canvas.set_draw_color(color);
         self.canvas.clear();
+    }
+
+    pub fn fill(&mut self, color: Color) {
+        self.canvas.set_draw_color(color);
+        self.canvas
+            .fill_rect(rect!(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
+            .unwrap();
     }
 }
 

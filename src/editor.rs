@@ -100,7 +100,7 @@ impl Editor {
         );
         draw_grid(renderer, &self.camera);
         if self.paused {
-            renderer.clear(&Color::RGBA(0, 0, 0, 128));
+            renderer.fill(Color::RGBA(0, 0, 0, 128));
             self.menu.draw(
                 renderer,
                 &Camera::default(),
