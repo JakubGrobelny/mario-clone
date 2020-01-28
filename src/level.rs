@@ -1,15 +1,8 @@
 use crate::block::*;
-use crate::object::*;
 use crate::render::*;
 use crate::resource::*;
-use crate::utility::*;
-
-use std::fs;
-use std::path::Path;
 
 use serde::{Deserialize, Serialize};
-
-use sdl2::rect::Rect;
 
 pub const LEVEL_HEIGHT: usize = 20;
 pub const LEVEL_WIDTH: usize = 220;
@@ -41,7 +34,7 @@ impl From<&Level> for LevelJSON {
             .iter()
             .map(|row| row.iter())
             .flatten()
-            .map(|block| block.clone())
+            .copied()
             .collect();
         LevelJSON {
             theme: lvl.theme,
@@ -51,7 +44,7 @@ impl From<&Level> for LevelJSON {
 }
 
 impl LevelTheme {
-    pub fn next(&self) -> LevelTheme {
+    pub fn next(self) -> LevelTheme {
         match self {
             LevelTheme::Day => LevelTheme::Underground,
             LevelTheme::Underground => LevelTheme::Night,
@@ -59,7 +52,7 @@ impl LevelTheme {
         }
     }
 
-    pub fn prev(&self) -> LevelTheme {
+    pub fn prev(self) -> LevelTheme {
         match self {
             LevelTheme::Day => LevelTheme::Night,
             LevelTheme::Underground => LevelTheme::Day,

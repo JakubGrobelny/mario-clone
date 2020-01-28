@@ -2,7 +2,6 @@ use crate::controller::*;
 use crate::hitbox::*;
 use crate::render::*;
 use crate::resource::*;
-use crate::state::*;
 
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
@@ -25,7 +24,7 @@ pub struct ButtonColumn<T> {
 }
 
 pub struct ButtonColumnBuilder<'a, T> {
-    buttons: Vec<ButtonInfo<'a, T>>,
+    buttons: ButtonColumnInfo<'a, T>,
     width: u32,
     height: u32,
     separation: u32,

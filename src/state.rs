@@ -1,11 +1,7 @@
 use crate::controller::*;
 use crate::editor::*;
 use crate::game::*;
-use crate::hitbox::*;
-use crate::interface::*;
-use crate::level::*;
 use crate::menu::*;
-use crate::player::*;
 use crate::render::*;
 use crate::resource::*;
 use crate::utility::*;
@@ -193,11 +189,17 @@ impl GameState<'_> {
                 let reading_text = self.data.text_input.is_active();
                 if !reading_text {
                     self.data.text_input.start();
-                } else if self.data.controller.is_key_active(Key::Enter) {
+                } else if self.data.controller.was_key_pressed(Key::Enter) {
                     let file_name = self.data.text_input.end();
                     replace(
                         activity,
                         Activity::new_editor(&self.data.resources, &file_name),
+                    );
+                } else if self.data.controller.was_key_pressed(Key::Escape) {
+                    self.data.text_input.end();
+                    replace(
+                        activity,
+                        Activity::new_main_menu(&self.data.resources),
                     );
                 }
             }

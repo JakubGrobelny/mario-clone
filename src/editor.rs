@@ -6,8 +6,6 @@ use crate::render::*;
 use crate::resource::*;
 use crate::state::*;
 
-use vector2d::Vector2D;
-
 use sdl2::pixels::Color;
 
 pub struct Editor {
@@ -27,12 +25,6 @@ enum ButtonEffect {
 impl Editor {
     pub fn new(resources: &ResourceManager, name: &str) -> Editor {
         let level = resources.load_level(name).unwrap_or_default();
-        let button_data = vec![
-            ("RESUME", ButtonEffect::Resume),
-            ("SAVE", ButtonEffect::Save),
-            ("MENU", ButtonEffect::Menu),
-        ];
-
         let buttons = ButtonColumnBuilder::new()
             .add(("RESUME", ButtonEffect::Resume))
             .add(("SAVE", ButtonEffect::Save))
@@ -116,7 +108,6 @@ impl Editor {
             &mut data.resources,
             data.frame,
         );
-        draw_grid(renderer, &self.camera);
         if self.paused {
             renderer.fill(Color::RGBA(0, 0, 0, 128));
             self.menu.draw(
@@ -125,6 +116,8 @@ impl Editor {
                 &mut data.resources,
                 data.frame,
             );
+        } else {
+            draw_grid(renderer, &self.camera);
         }
     }
 }

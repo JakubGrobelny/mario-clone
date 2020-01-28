@@ -24,7 +24,7 @@ impl Score {
 }
 
 impl Game {
-    pub fn new(resources: &ResourceManager) -> Game {
+    pub fn new(_res: &ResourceManager) -> Game {
         let player = Player::new(0, 0);
         let camera = Camera::new(player.position_x(), player.position_y());
         Game {

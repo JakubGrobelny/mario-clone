@@ -1,9 +1,6 @@
 use crate::block::*;
-use crate::interface::*;
 use crate::level::*;
-use crate::player::*;
 use crate::resource::*;
-use crate::utility::*;
 
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
@@ -180,7 +177,7 @@ impl Default for Camera {
 
 impl Camera {
     pub fn new(x: i32, y: i32) -> Camera {
-        Camera { x: x, y: y }
+        Camera { x, y }
     }
 
     pub fn shift(&mut self, amount: (i32, i32)) {

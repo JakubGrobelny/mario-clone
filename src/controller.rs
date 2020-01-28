@@ -109,6 +109,12 @@ impl ButtonState {
     }
 }
 
+impl Default for Controller {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Controller {
     pub fn new() -> Controller {
         Controller {
@@ -173,6 +179,12 @@ impl Controller {
 
     pub fn was_key_pressed(&self, key: Key) -> bool {
         self.keys[key as usize] == ButtonState::Pressed
+    }
+}
+
+impl Default for Mouse {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

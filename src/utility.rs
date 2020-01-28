@@ -1,8 +1,6 @@
 use std::error::Error;
 use std::path::PathBuf;
 
-use sdl2::messagebox::*;
-
 pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 pub fn get_base_path() -> Result<PathBuf> {

@@ -1,12 +1,6 @@
 use crate::level::*;
 use crate::render::*;
 use crate::resource::*;
-use crate::utility::*;
-
-use std::rc::Rc;
-
-use sdl2::rect::Rect;
-use sdl2::render::Texture;
 
 use serde::{Deserialize, Serialize};
 
@@ -33,7 +27,7 @@ impl Default for BlockType {
 }
 
 impl BlockType {
-    pub fn texture_name(&self) -> Option<&'static str> {
+    pub fn texture_name(self) -> Option<&'static str> {
         match self {
             BlockType::Air => None,
             BlockType::Bricks => Some("brick"),
@@ -41,32 +35,32 @@ impl BlockType {
         }
     }
 
-    pub fn is_visible(&self) -> bool {
-        self != &BlockType::Air
+    pub fn is_visible(self) -> bool {
+        self != BlockType::Air
     }
 
-    pub fn has_themes(&self) -> bool {
+    pub fn has_themes(self) -> bool {
         match self {
             BlockType::Bricks => true,
             BlockType::Air | BlockType::QuestionMark(..) => false,
         }
     }
 
-    pub fn is_animated(&self) -> bool {
+    pub fn is_animated(self) -> bool {
         match self {
             BlockType::QuestionMark(..) => true,
             _ => false,
         }
     }
 
-    pub fn frame_index(&self, tick: u32) -> u32 {
+    pub fn frame_index(self, tick: u32) -> u32 {
         match self {
             BlockType::QuestionMark(..) => (tick / FPS) % 2,
             _ => 0,
         }
     }
 
-    pub fn variant_index(&self, theme: LevelTheme) -> u32 {
+    pub fn variant_index(self, theme: LevelTheme) -> u32 {
         if self.has_themes() {
             theme as u32
         } else {
