@@ -16,7 +16,7 @@ pub const LEVEL_WIDTH: usize = 220;
 
 #[derive(Clone)]
 pub struct Level {
-    theme: LevelTheme,
+    pub theme: LevelTheme,
     blocks: Box<[[BlockType; LEVEL_WIDTH]; LEVEL_HEIGHT]>,
 }
 
@@ -32,6 +32,24 @@ pub enum LevelTheme {
     Day,
     Underground,
     Night,
+}
+
+impl LevelTheme {
+    pub fn next(&self) -> LevelTheme {
+        match self {
+            LevelTheme::Day => LevelTheme::Underground,
+            LevelTheme::Underground => LevelTheme::Night,
+            LevelTheme::Night => LevelTheme::Day,
+        }
+    }
+
+    pub fn prev(&self) -> LevelTheme {
+        match self {
+            LevelTheme::Day => LevelTheme::Night,
+            LevelTheme::Underground => LevelTheme::Day,
+            LevelTheme::Night => LevelTheme::Underground,
+        }
+    }
 }
 
 impl Default for Level {

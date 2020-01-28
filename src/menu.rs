@@ -10,7 +10,7 @@ use std::mem::replace;
 type MainMenuButtonFunc = fn(&mut SharedGameData) -> Option<Activity>;
 
 pub struct MainMenu {
-    buttons: Vec<Button<MainMenuButtonFunc>>,
+    buttons: ButtonColumn<MainMenuButtonFunc>,
 }
 
 impl<'a> OnClick<&mut SharedGameData<'a>, Option<Activity>>
@@ -35,24 +35,14 @@ impl MainMenu {
         let on_editor: MainMenuButtonFunc =
             |data: &mut SharedGameData| Some(Activity::FileInputScreen);
 
-        const BUTTON_WIDTH: u32 = 300;
-        const BUTTON_HEIGHT: u32 = 90;
-        const BUTTON_DISTANCE: u32 = 20;
         const BUTTONS_Y_OFFSET: i32 = 150;
 
-        let button_info = vec![
-            ("START", on_start),
-            ("EDITOR", on_editor),
-            ("EXIT", on_exit),
-        ];
-
-        let buttons = make_button_column(
-            button_info,
-            BUTTON_WIDTH,
-            BUTTON_HEIGHT,
-            BUTTON_DISTANCE,
-            (0, BUTTONS_Y_OFFSET),
-        );
+        let buttons = ButtonColumnBuilder::new()
+            .shift_y(BUTTONS_Y_OFFSET)
+            .add(("START", on_start))
+            .add(("EDITOR", on_editor))
+            .add(("EXIT", on_exit))
+            .build();
 
         MainMenu { buttons }
     }
@@ -61,28 +51,22 @@ impl MainMenu {
         &self,
         data: &mut SharedGameData,
     ) -> Option<Activity> {
-        if data.controller.is_key_pressed(Key::Escape) {
+        if data.controller.is_key_active(Key::Escape) {
             data.should_exit = true;
         }
         let mouse_pos = data.controller.mouse().pos();
-        if data.controller.mouse().is_left_button_pressed() {
-            for button in self.buttons.iter() {
-                if mouse_pos.collides(button.rect()) {
-                    return button.on_click(data);
-                }
-            }
-        }
-        None
+        self.buttons
+            .effect_if_clicked(&data.controller)
+            .map(|effect| effect(data))
+            .unwrap_or(None)
     }
 
     pub fn draw(&self, renderer: &mut Renderer, data: &mut SharedGameData) {
-        for button in self.buttons.iter() {
-            button.draw(
-                renderer,
-                &Camera::default(),
-                &mut data.resources,
-                data.frame,
-            );
-        }
+        self.buttons.draw(
+            renderer,
+            &Camera::default(),
+            &mut data.resources,
+            data.frame,
+        );
     }
 }

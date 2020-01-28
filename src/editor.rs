@@ -1,5 +1,6 @@
 use crate::block::*;
 use crate::controller::*;
+use crate::interface::*;
 use crate::level::*;
 use crate::render::*;
 use crate::resource::*;
@@ -7,21 +8,43 @@ use crate::state::*;
 
 use vector2d::Vector2D;
 
+use sdl2::pixels::Color;
+
 pub struct Editor {
     camera: Camera,
     level: Level,
     level_name: String,
     paused: bool,
+    menu: ButtonColumn<ButtonEffect>,
+}
+
+enum ButtonEffect {
+    Exit,
+    Save,
+    Resume,
 }
 
 impl Editor {
     pub fn new(resources: &ResourceManager, name: &str) -> Editor {
         let level = resources.load_level(name).unwrap_or_default();
+        let button_data = vec![
+            ("RESUME", ButtonEffect::Resume),
+            ("SAVE", ButtonEffect::Save),
+            ("MENU", ButtonEffect::Exit),
+        ];
+
+        let buttons = ButtonColumnBuilder::new()
+            .add(("RESUME", ButtonEffect::Resume))
+            .add(("SAVE", ButtonEffect::Save))
+            .add(("MENU", ButtonEffect::Exit))
+            .build();
+
         Editor {
             camera: Camera::default(),
             paused: false,
             level,
             level_name: String::from(name),
+            menu: buttons,
         }
     }
 
@@ -29,7 +52,7 @@ impl Editor {
         const MOVEMENT_MARGIN: i32 = BLOCK_SIZE as i32 - 1;
         const MOVEMENT_SPEED: i32 = 10;
         let (x, y) = game_data.controller.mouse().pos();
-        let shift_pressed = game_data.controller.is_key_pressed(Key::Sprint);
+        let shift_pressed = game_data.controller.is_key_active(Key::Sprint);
         let accel = if shift_pressed { 3 } else { 1 };
 
         let x_movement = if x < MOVEMENT_MARGIN {
@@ -52,11 +75,20 @@ impl Editor {
     }
 
     pub fn update(&mut self, game_data: &mut SharedGameData) {
-        self.move_camera(game_data);
-        if game_data.controller.is_key_pressed(Key::Left) {
-
+        if game_data.controller.was_key_pressed(Key::Escape) {
+            self.paused ^= true;
         }
 
+        if self.paused {
+            if game_data.controller.mouse().is_left_button_active() {}
+        } else {
+            self.move_camera(game_data);
+            if game_data.controller.was_key_pressed(Key::Left) {
+                self.level.theme = self.level.theme.prev();
+            } else if game_data.controller.was_key_pressed(Key::Right) {
+                self.level.theme = self.level.theme.next();
+            }
+        }
     }
 
     pub fn draw(&self, renderer: &mut Renderer, data: &mut SharedGameData) {
@@ -67,5 +99,14 @@ impl Editor {
             data.frame,
         );
         draw_grid(renderer, &self.camera);
+        if self.paused {
+            renderer.clear(&Color::RGBA(0, 0, 0, 128));
+            self.menu.draw(
+                renderer,
+                &Camera::default(),
+                &mut data.resources,
+                data.frame,
+            );
+        }
     }
 }

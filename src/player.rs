@@ -31,17 +31,17 @@ impl Player {
 
     pub fn accelerate(&mut self, controller: &Controller) {
         fn convert_acceleration(controller: &Controller) -> Vector2D<f64> {
-            let accel_x = if controller.is_key_pressed(Key::Left) {
+            let accel_x = if controller.is_key_active(Key::Left) {
                 -1.0
-            } else if controller.is_key_pressed(Key::Right) {
+            } else if controller.is_key_active(Key::Right) {
                 1.0
             } else {
                 0.0
             };
 
-            let accel_y = if controller.is_key_pressed(Key::Up) {
+            let accel_y = if controller.is_key_active(Key::Up) {
                 -1.0
-            } else if controller.is_key_pressed(Key::Down) {
+            } else if controller.is_key_active(Key::Down) {
                 1.0
             } else {
                 0.0

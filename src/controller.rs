@@ -62,17 +62,17 @@ impl From<Keycode> for Key {
 
 impl From<&Controller> for Vector2D<i32> {
     fn from(controller: &Controller) -> Vector2D<i32> {
-        let x = if controller.is_key_pressed(Key::Left) {
+        let x = if controller.is_key_active(Key::Left) {
             -1
-        } else if controller.is_key_pressed(Key::Right) {
+        } else if controller.is_key_active(Key::Right) {
             1
         } else {
             0
         };
 
-        let y = if controller.is_key_pressed(Key::Up) {
+        let y = if controller.is_key_active(Key::Up) {
             -1
-        } else if controller.is_key_pressed(Key::Down) {
+        } else if controller.is_key_active(Key::Down) {
             1
         } else {
             0
@@ -163,12 +163,16 @@ impl Controller {
         }
     }
 
-    pub fn mouse(&mut self) -> &mut Mouse {
-        &mut self.mouse
+    pub fn mouse(&self) -> &Mouse {
+        &self.mouse
     }
 
-    pub fn is_key_pressed(&self, key: Key) -> bool {
+    pub fn is_key_active(&self, key: Key) -> bool {
         self.keys[key as usize] != ButtonState::Inactive
+    }
+
+    pub fn was_key_pressed(&self, key: Key) -> bool {
+        self.keys[key as usize] == ButtonState::Pressed
     }
 }
 
@@ -190,11 +194,11 @@ impl Mouse {
         self.scroll
     }
 
-    pub fn is_left_button_pressed(&self) -> bool {
+    pub fn is_left_button_active(&self) -> bool {
         self.left_button != ButtonState::Inactive
     }
 
-    pub fn is_right_button_pressed(&self) -> bool {
+    pub fn is_right_button_active(&self) -> bool {
         self.right_button != ButtonState::Inactive
     }
 

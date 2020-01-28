@@ -193,7 +193,7 @@ impl GameState<'_> {
                 let reading_text = self.data.text_input.is_active();
                 if !reading_text {
                     self.data.text_input.start();
-                } else if self.data.controller.is_key_pressed(Key::Enter) {
+                } else if self.data.controller.is_key_active(Key::Enter) {
                     let file_name = self.data.text_input.end();
                     replace(
                         activity,
