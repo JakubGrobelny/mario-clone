@@ -1,7 +1,9 @@
 use crate::render::*;
 use crate::state::*;
+use crate::resource::*;
 
 use sdl2::rect::Rect;
+use sdl2::pixels::Color;
 
 // pub type ButtonCallback =
 //     fn(&mut SharedGameData, &mut Activity) -> Option<Activity>;
@@ -67,3 +69,32 @@ impl<T> Button<T> {
 pub trait OnClick<Arg, Val> {
     fn on_click(&self, arg: Arg) -> Val;
 }
+
+impl<T> Drawable for Button<T> {
+    fn draw(
+        &self,
+        renderer: &mut Renderer,
+        cam: &Camera,
+        res: &mut ResourceManager,
+        frame: u32,
+    ) {
+        let button_color = Color::RGB(255, 153, 0);
+        renderer.canvas.set_draw_color(button_color);
+        renderer
+            .canvas
+            .fill_rect(*self.rect())
+            .expect("Failed to draw a button!");
+
+        let center = self.rect().center();
+        let text = PositionedText::new(
+            self.text(),
+            (center.x(), center.y()),
+            TextAlignment::TotalCenter,
+            0.25,
+            Color::RGB(255, 255, 255),
+        );
+
+        text.draw(renderer, cam, res, frame);
+    }
+}
+

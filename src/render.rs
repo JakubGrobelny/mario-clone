@@ -12,8 +12,11 @@ use sdl2::video::WindowContext;
 
 use std::convert::TryInto;
 use std::fmt::Debug;
+use std::rc::Rc;
 
 type Canvas = sdl2::render::Canvas<sdl2::video::Window>;
+
+pub const FPS: u32 = 60;
 
 pub const SCREEN_WIDTH: u32 = 1280;
 pub const SCREEN_HEIGHT: u32 = 720;
@@ -27,6 +30,11 @@ pub struct Renderer {
 pub struct Camera {
     x: i32,
     y: i32,
+}
+
+pub struct AnimationFrame<'a> {
+    pub texture: Rc<Texture<'a>>,
+    pub region: Rect,
 }
 
 pub enum TextAlignment {
@@ -53,7 +61,13 @@ pub struct TextBuilder<'a> {
 }
 
 pub trait Drawable {
-    fn draw(&self, canvas: &mut Renderer, cam: &Camera, res: &ResourceManager);
+    fn draw(
+        &self,
+        canvas: &mut Renderer,
+        cam: &Camera,
+        res: &mut ResourceManager,
+        tick: u32,
+    );
 }
 
 impl<'a> TextBuilder<'a> {
@@ -159,9 +173,6 @@ impl Default for Camera {
 
 impl Camera {
     pub fn new(x: i32, y: i32) -> Camera {
-        const CENTER_X: i32 = SCREEN_WIDTH as i32 / 2;
-        const CENTER_Y: i32 = SCREEN_HEIGHT as i32 / 2;
-
         Camera { x: x, y: y }
     }
 
@@ -193,50 +204,17 @@ impl Camera {
     }
 
     pub fn translate_coords(&self, coords: (i32, i32)) -> (i32, i32) {
-        (coords.0 + self.x, coords.1 + self.y)
+        (coords.0 - self.x, coords.1 - self.y)
     }
-}
 
-impl<T> Drawable for Button<T> {
-    fn draw(
-        &self,
-        renderer: &mut Renderer,
-        cam: &Camera,
-        res: &ResourceManager,
-    ) {
-        let button_color = Color::RGB(255, 153, 0);
-        renderer.canvas.set_draw_color(button_color);
-        renderer
-            .canvas
-            .fill_rect(*self.rect())
-            .expect("Failed to draw a button!");
-
-        let center = self.rect().center();
-        let text = PositionedText::new(
-            self.text(),
-            (center.x(), center.y()),
-            TextAlignment::TotalCenter,
-            0.25,
-            Color::RGB(255, 255, 255),
+    pub fn in_view(&self, rect: Rect) -> bool {
+        let cam_rect = Rect::new(
+            self.x - 1,
+            self.y - 1,
+            SCREEN_WIDTH + 1,
+            SCREEN_HEIGHT + 1,
         );
-
-        text.draw(renderer, cam, res);
-    }
-}
-
-impl Drawable for Player {
-    fn draw(&self, renderer: &mut Renderer, _: &Camera, _: &ResourceManager) {
-        renderer.canvas.set_draw_color(Color::RGB(255, 0, 0));
-        let rect = Rect::new(
-            self.position_x(),
-            self.position_y(),
-            PLAYER_WIDTH as u32,
-            PLAYER_HEIGHT as u32,
-        );
-        renderer
-            .canvas
-            .fill_rect(rect)
-            .expect("Failed to fill a rectangle!");
+        cam_rect.contains_rect(rect) || cam_rect.has_intersection(rect)
     }
 }
 
@@ -245,7 +223,8 @@ impl Drawable for PositionedText<'_> {
         &self,
         renderer: &mut Renderer,
         cam: &Camera,
-        res: &ResourceManager,
+        res: &mut ResourceManager,
+        _tick: u32,
     ) {
         if self.text.is_empty() {
             return;
@@ -288,5 +267,16 @@ pub fn draw_grid(renderer: &mut Renderer, camera: &Camera) {
         let from = Point::new(0, y);
         let to = Point::new(SCREEN_WIDTH as i32, y);
         renderer.canvas.draw_line(from, to).unwrap();
+    }
+}
+
+impl AnimationFrame<'_> {
+    pub fn draw(&self, renderer: &mut Renderer, cam: &Camera, pos: (i32, i32)) {
+        let (x, y) = cam.translate_coords(pos);
+        let dest = rect!(x, y, self.region.width(), self.region.height());
+        renderer
+            .canvas
+            .copy(&self.texture, self.region, dest)
+            .unwrap();
     }
 }

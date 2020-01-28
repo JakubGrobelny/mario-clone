@@ -11,6 +11,7 @@ mod hitbox;
 mod interface;
 mod level;
 mod menu;
+mod object;
 mod physics;
 mod player;
 mod render;
@@ -26,8 +27,6 @@ use sdl2::pixels::Color;
 
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
-
-const FPS: u32 = 60;
 
 fn main() {
     if let Err(err) = run() {

@@ -77,7 +77,12 @@ impl MainMenu {
 
     pub fn draw(&self, renderer: &mut Renderer, data: &mut SharedGameData) {
         for button in self.buttons.iter() {
-            button.draw(renderer, &Camera::default(), &data.resources);
+            button.draw(
+                renderer,
+                &Camera::default(),
+                &mut data.resources,
+                data.frame,
+            );
         }
     }
 }

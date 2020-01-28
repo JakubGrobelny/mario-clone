@@ -41,15 +41,11 @@ impl Game {
 
     pub fn draw(&self, renderer: &mut Renderer, data: &mut SharedGameData) {
         // TODO: remove tests
-        let frame = data.frame % 60;
-        {
-            let texture = if frame > 30 {
-                data.resources.texture("test1")
-            } else {
-                data.resources.texture("test2")
-            };
-            renderer.canvas.copy(&texture, None, None).unwrap();
-        }
-        self.player.draw(renderer, &self.camera, &data.resources);
+        self.player.draw(
+            renderer,
+            &self.camera,
+            &mut data.resources,
+            data.frame,
+        );
     }
 }

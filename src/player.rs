@@ -1,6 +1,12 @@
 use crate::controller::*;
 use crate::hitbox::*;
 use crate::physics::*;
+use crate::render::*;
+use crate::resource::*;
+
+use sdl2::pixels::Color;
+use sdl2::rect::Rect;
+
 use vector2d::Vector2D;
 
 #[derive(Debug)]
@@ -61,5 +67,27 @@ impl Player {
 
     pub fn position_y(&self) -> i32 {
         self.position.1
+    }
+}
+
+impl Drawable for Player {
+    fn draw(
+        &self,
+        renderer: &mut Renderer,
+        _cam: &Camera,
+        _res: &mut ResourceManager,
+        _frame: u32,
+    ) {
+        renderer.canvas.set_draw_color(Color::RGB(255, 0, 0));
+        let rect = Rect::new(
+            self.position_x(),
+            self.position_y(),
+            PLAYER_WIDTH as u32,
+            PLAYER_HEIGHT as u32,
+        );
+        renderer
+            .canvas
+            .fill_rect(rect)
+            .expect("Failed to fill a rectangle!");
     }
 }

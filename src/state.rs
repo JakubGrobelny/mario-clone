@@ -243,8 +243,18 @@ impl GameState<'_> {
                     .scale(0.2)
                     .build();
 
-                prompt.draw(renderer, &Camera::default(), self.resources());
-                text.draw(renderer, &Camera::default(), self.resources());
+                prompt.draw(
+                    renderer,
+                    &Camera::default(),
+                    &mut self.data.resources,
+                    self.data.frame,
+                );
+                text.draw(
+                    renderer,
+                    &Camera::default(),
+                    &mut self.data.resources,
+                    self.data.frame,
+                );
             }
         }
 

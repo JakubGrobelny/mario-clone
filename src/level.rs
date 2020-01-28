@@ -1,10 +1,15 @@
 use crate::block::*;
+use crate::object::*;
+use crate::render::*;
+use crate::resource::*;
 use crate::utility::*;
 
 use std::fs;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
+
+use sdl2::rect::Rect;
 
 pub const LEVEL_HEIGHT: usize = 20;
 pub const LEVEL_WIDTH: usize = 220;
@@ -22,9 +27,10 @@ pub struct LevelJSON {
 }
 
 #[derive(Deserialize, Serialize, Copy, Clone)]
-enum LevelTheme {
-    Underground,
+#[repr(u8)]
+pub enum LevelTheme {
     Day,
+    Underground,
     Night,
 }
 
@@ -71,6 +77,34 @@ impl Level {
         Level {
             blocks,
             theme: LevelTheme::Day,
+        }
+    }
+}
+
+impl Drawable for Level {
+    fn draw(
+        &self,
+        renderer: &mut Renderer,
+        cam: &Camera,
+        res: &mut ResourceManager,
+        tick: u32,
+    ) {
+
+        for (y, row) in self.blocks.iter().enumerate() {
+            for (x, block) in row.iter().enumerate() {
+                let x = x as i32 * BLOCK_SIZE as i32;
+                let y = y as i32 * BLOCK_SIZE as i32;
+
+                if !cam.in_view(rect!(x, y, BLOCK_SIZE, BLOCK_SIZE)) {
+                    continue;
+                }
+
+                if let Some(frame) =
+                    block.get_animation_frame(res, self.theme, tick)
+                {                    
+                    frame.draw(renderer, cam, (x, y))
+                }
+            }
         }
     }
 }
