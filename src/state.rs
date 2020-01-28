@@ -221,9 +221,6 @@ impl GameState<'_> {
     }
 
     pub fn draw(&mut self, renderer: &mut Renderer) {
-        renderer.canvas.set_draw_color(Color::RGB(88, 100, 255));
-        renderer.canvas.clear();
-
         match &self.activity {
             Activity::Game(game) => {
                 game.draw(renderer, &mut self.data);

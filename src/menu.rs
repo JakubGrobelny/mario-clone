@@ -4,6 +4,8 @@ use crate::render::*;
 use crate::resource::*;
 use crate::state::*;
 
+use sdl2::pixels::Color;
+
 type MainMenuButtonFunc = fn(&mut SharedGameData) -> Option<Activity>;
 
 pub struct MainMenu {
@@ -58,6 +60,8 @@ impl MainMenu {
     }
 
     pub fn draw(&self, renderer: &mut Renderer, data: &mut SharedGameData) {
+        renderer.canvas.set_draw_color(Color::RGB(88, 100, 255));
+        renderer.canvas.clear();
         self.buttons.draw(
             renderer,
             &Camera::default(),

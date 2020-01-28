@@ -2,6 +2,8 @@ use crate::block::*;
 use crate::render::*;
 use crate::resource::*;
 
+use sdl2::pixels::Color;
+
 use serde::{Deserialize, Serialize};
 
 pub const LEVEL_HEIGHT: usize = 20;
@@ -109,6 +111,16 @@ impl Level {
     }
 }
 
+impl From<LevelTheme> for Color {
+    fn from(theme: LevelTheme) -> Color {
+        match theme {
+            LevelTheme::Day => Color::RGB(88, 100, 255),
+            LevelTheme::Night => Color::RGB(0,0,0),
+            LevelTheme::Underground => Color::RGB(0, 0, 64),
+        }
+    }
+}
+
 impl Drawable for Level {
     fn draw(
         &self,
@@ -117,6 +129,10 @@ impl Drawable for Level {
         res: &mut ResourceManager,
         tick: u32,
     ) {
+        let color = Color::from(self.theme);
+        renderer.canvas.set_draw_color(color);
+        renderer.canvas.clear();
+
         for (y, row) in self.blocks.iter().enumerate() {
             for (x, block) in row.iter().enumerate() {
                 let x = x as i32 * BLOCK_SIZE as i32;

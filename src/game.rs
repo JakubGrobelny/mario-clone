@@ -3,6 +3,8 @@ use crate::render::*;
 use crate::resource::*;
 use crate::state::*;
 
+use sdl2::pixels::Color;
+
 pub struct Score {
     lives: u32,
     coins: u32,
@@ -41,6 +43,8 @@ impl Game {
 
     pub fn draw(&self, renderer: &mut Renderer, data: &mut SharedGameData) {
         // TODO: remove tests
+        renderer.canvas.set_draw_color(Color::RGB(88, 100, 255));
+        renderer.canvas.clear();
         self.player.draw(
             renderer,
             &self.camera,
