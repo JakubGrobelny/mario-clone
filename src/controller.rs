@@ -194,6 +194,14 @@ impl Mouse {
         self.scroll
     }
 
+    pub fn was_left_button_pressed(&self) -> bool {
+        self.left_button == ButtonState::Pressed
+    }
+
+    pub fn was_right_button_pressed(&self) -> bool {
+        self.right_button == ButtonState::Pressed
+    }
+
     pub fn is_left_button_active(&self) -> bool {
         self.left_button != ButtonState::Inactive
     }

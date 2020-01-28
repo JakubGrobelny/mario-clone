@@ -34,7 +34,7 @@ pub struct ButtonColumnBuilder<'a, T> {
 
 impl<T> ButtonColumn<T> {
     pub fn effect_if_clicked(&self, controller: &Controller) -> Option<&T> {
-        if !controller.mouse().is_left_button_active() {
+        if !controller.mouse().was_left_button_pressed() {
             return None;
         }
 

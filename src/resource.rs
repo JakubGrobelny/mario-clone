@@ -107,8 +107,26 @@ impl ResourceManager<'_> {
             })
     }
 
+    pub fn save_level(&self, name: &str, level: &Level) {
+        let serialized = serde_json::to_string(&LevelJSON::from(level))
+            .unwrap_or_else(|err| {
+                panic_with_messagebox!(
+                    "Failed to serialize a level ({})!",
+                    err
+                );
+            });
+        let path = self.res_path.join("levels/").join(format!("{}.lvl", name));
+        fs::write(path, serialized).unwrap_or_else(|err| {
+            panic_with_messagebox!(
+                "Failed to write to file '{}' ({})!",
+                name,
+                err
+            )
+        });
+    }
+
     pub fn load_level(&self, name: &str) -> Option<Level> {
-        let path = self.res_path.join(format!("levels/{}.lvl", name));
+        let path = self.res_path.join("levels/").join(format!("{}.lvl", name));
 
         if !path.exists() {
             return None;

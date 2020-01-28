@@ -34,6 +34,22 @@ pub enum LevelTheme {
     Night,
 }
 
+impl From<&Level> for LevelJSON {
+    fn from(lvl: &Level) -> LevelJSON {
+        let blocks: Vec<BlockType> = lvl
+            .blocks
+            .iter()
+            .map(|row| row.iter())
+            .flatten()
+            .map(|block| block.clone())
+            .collect();
+        LevelJSON {
+            theme: lvl.theme,
+            blocks,
+        }
+    }
+}
+
 impl LevelTheme {
     pub fn next(&self) -> LevelTheme {
         match self {
@@ -68,8 +84,9 @@ impl From<LevelJSON> for Level {
 
         let mut blocks =
             Box::new([[BlockType::default(); LEVEL_WIDTH]; LEVEL_HEIGHT]);
+
         for (i, block) in json.blocks.into_iter().enumerate() {
-            let row = i / LEVEL_HEIGHT;
+            let row = i / LEVEL_WIDTH;
             let col = i % LEVEL_WIDTH;
             blocks[row][col] = block;
         }
@@ -107,7 +124,6 @@ impl Drawable for Level {
         res: &mut ResourceManager,
         tick: u32,
     ) {
-
         for (y, row) in self.blocks.iter().enumerate() {
             for (x, block) in row.iter().enumerate() {
                 let x = x as i32 * BLOCK_SIZE as i32;
@@ -119,7 +135,7 @@ impl Drawable for Level {
 
                 if let Some(frame) =
                     block.get_animation_frame(res, self.theme, tick)
-                {                    
+                {
                     frame.draw(renderer, cam, (x, y))
                 }
             }

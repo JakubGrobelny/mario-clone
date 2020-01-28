@@ -19,7 +19,7 @@ pub struct Editor {
 }
 
 enum ButtonEffect {
-    Exit,
+    Menu,
     Save,
     Resume,
 }
@@ -30,13 +30,13 @@ impl Editor {
         let button_data = vec![
             ("RESUME", ButtonEffect::Resume),
             ("SAVE", ButtonEffect::Save),
-            ("MENU", ButtonEffect::Exit),
+            ("MENU", ButtonEffect::Menu),
         ];
 
         let buttons = ButtonColumnBuilder::new()
             .add(("RESUME", ButtonEffect::Resume))
             .add(("SAVE", ButtonEffect::Save))
-            .add(("MENU", ButtonEffect::Exit))
+            .add(("MENU", ButtonEffect::Menu))
             .build();
 
         Editor {
@@ -74,13 +74,30 @@ impl Editor {
         self.camera.shift((x_movement * accel, y_movement * accel));
     }
 
-    pub fn update(&mut self, game_data: &mut SharedGameData) {
+    pub fn update(&mut self, game_data: &mut SharedGameData) -> bool {
         if game_data.controller.was_key_pressed(Key::Escape) {
             self.paused ^= true;
         }
 
         if self.paused {
-            if game_data.controller.mouse().is_left_button_active() {}
+            if let Some(effect) =
+                self.menu.effect_if_clicked(&game_data.controller)
+            {
+                match effect {
+                    ButtonEffect::Menu => {
+                        return true;
+                    }
+                    ButtonEffect::Resume => {
+                        self.paused = false;
+                    }
+                    ButtonEffect::Save => {
+                        game_data
+                            .resources
+                            .save_level(&self.level_name, &self.level);
+                        self.paused = false;
+                    }
+                }
+            }
         } else {
             self.move_camera(game_data);
             if game_data.controller.was_key_pressed(Key::Left) {
@@ -89,6 +106,7 @@ impl Editor {
                 self.level.theme = self.level.theme.next();
             }
         }
+        false
     }
 
     pub fn draw(&self, renderer: &mut Renderer, data: &mut SharedGameData) {

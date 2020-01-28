@@ -202,7 +202,12 @@ impl GameState<'_> {
                 }
             }
             Activity::Editor(editor) => {
-                editor.update(&mut self.data);
+                if editor.update(&mut self.data) {
+                    replace(
+                        &mut self.activity,
+                        Activity::new_main_menu(&self.data.resources),
+                    );
+                }
             }
             Activity::MainMenu(menu) => {
                 let activity = menu.update_and_get_activity(&mut self.data);
