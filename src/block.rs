@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 pub const BLOCK_SIZE: u32 = 64;
 
+
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum BlockType {
     Air,

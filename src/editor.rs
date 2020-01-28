@@ -14,6 +14,7 @@ pub struct Editor {
     level_name: String,
     paused: bool,
     menu: ButtonColumn<ButtonEffect>,
+    selected: BlockType,
 }
 
 enum ButtonEffect {
@@ -37,6 +38,7 @@ impl Editor {
             level,
             level_name: String::from(name),
             menu: buttons,
+            selected: BlockType::default(),
         }
     }
 
