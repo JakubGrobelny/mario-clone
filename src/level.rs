@@ -100,7 +100,7 @@ impl Level {
         const GROUND_HEIGHT: usize = 3;
         for col in 0..LEVEL_WIDTH {
             for row in LEVEL_HEIGHT - GROUND_HEIGHT..LEVEL_HEIGHT {
-                blocks[row][col] = BlockType::Bricks;
+                blocks[row][col] = BlockType::Rock;
             }
         }
 
@@ -116,7 +116,7 @@ impl From<LevelTheme> for Color {
         match theme {
             LevelTheme::Day => Color::RGB(88, 100, 255),
             LevelTheme::Night => Color::RGB(0,0,0),
-            LevelTheme::Underground => Color::RGB(0, 0, 64),
+            LevelTheme::Underground => Color::RGB(0, 0, 0),
         }
     }
 }

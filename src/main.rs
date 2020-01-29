@@ -1,5 +1,8 @@
+extern crate num_traits;
 extern crate sdl2;
 extern crate serde_json;
+#[macro_use]
+extern crate num_derive;
 
 #[macro_use]
 mod utility;

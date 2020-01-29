@@ -255,7 +255,7 @@ impl Drawable for PositionedText<'_> {
 }
 
 pub fn draw_grid(renderer: &mut Renderer, camera: &Camera) {
-    renderer.canvas.set_draw_color(Color::RGB(0, 0, 0));
+    renderer.canvas.set_draw_color(Color::RGB(50, 50, 50));
     let cols = (camera.x + SCREEN_WIDTH as i32) / BLOCK_SIZE as i32;
 
     for col in 0..=cols {
