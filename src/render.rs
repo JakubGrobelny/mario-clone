@@ -171,16 +171,41 @@ impl Renderer {
     }
 }
 
-
 #[macro_export]
 macro_rules! pass_draw {
     ($call:expr, $object:expr) => {
-        $call.renderer
+        $call
+            .renderer
             .draw($object)
             .camera($call.camera)
             .position($call.position)
             .scale($call.scale)
             .tick($call.tick)
+    };
+}
+
+#[macro_export]
+macro_rules! centered_text {
+    ($text:expr) => {
+        TextBuilder::new($text)
+            .alignment(TextAlignment::TotalCenter)
+            .build()
+    };
+}
+
+#[macro_export]
+macro_rules! text {
+    ($test:expr) => {
+        TextBuilder::new($text).build()
+    };
+}
+
+#[macro_export]
+macro_rules! test_right {
+    ($test:expr) => {
+        TextBuilder::new($text)
+            .alignment(TextAlignment::Right)
+            .build()
     };
 }
 

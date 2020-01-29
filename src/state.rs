@@ -245,15 +245,8 @@ impl GameState<'_> {
             },
             Activity::FileInputScreen => {
                 renderer.clear(Color::RGB(0, 0, 0));
-                let prompt =
-                    TextBuilder::new("Level name (without extension):")
-                        .alignment(TextAlignment::TotalCenter)
-                        .build();
-
-                let input = self.state.text_input.text();
-                let text = TextBuilder::new(&input)
-                    .alignment(TextAlignment::TotalCenter)
-                    .build();
+                let prompt = centered_text!("Level name: ");
+                let input = centered_text!(self.state.text_input.text());
 
                 renderer
                     .draw(&prompt)
@@ -265,7 +258,7 @@ impl GameState<'_> {
                     .show(&mut self.state.resources);
 
                 renderer
-                    .draw(&text)
+                    .draw(&input)
                     .position((
                         SCREEN_WIDTH as i32 / 2,
                         SCREEN_HEIGHT as i32 / 2,
