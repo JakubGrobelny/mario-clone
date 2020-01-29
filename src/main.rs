@@ -6,6 +6,8 @@ extern crate num_derive;
 
 #[macro_use]
 mod utility;
+#[macro_use]
+mod render;
 mod block;
 mod controller;
 mod editor;
@@ -17,7 +19,6 @@ mod menu;
 mod object;
 mod physics;
 mod player;
-mod render;
 mod resource;
 mod state;
 

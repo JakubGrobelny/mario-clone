@@ -27,9 +27,8 @@ pub enum BlockType {
     Air,
 }
 
-pub struct DrawableBlock<'a> {
+pub struct ThemedBlock<'a> {
     pub block: &'a Block,
-    pub pos:   (i32, i32),
     pub theme: LevelTheme,
 }
 
@@ -78,29 +77,6 @@ impl Block {
 
     pub fn is_visible(&self) -> bool {
         !self.hidden && self.kind.is_visible()
-    }
-
-    pub fn animation_frame<'a>(
-        &self,
-        res: &'a mut ResourceManager,
-        theme: LevelTheme,
-        tick: u32,
-    ) -> Option<AnimationFrame<'a>> {
-        if !self.is_visible() {
-            return None;
-        }
-
-        let block = self.kind;
-
-        let x = (block.frame_index(tick) * BLOCK_SIZE) as i32;
-        let y = (block.variant_index(theme) * BLOCK_SIZE) as i32;
-
-        let texture_name = block.texture_name().unwrap();
-        let texture = res.texture(texture_name);
-
-        let region = rect!(x, y, BLOCK_SIZE, BLOCK_SIZE);
-
-        Some(AnimationFrame { texture, region })
     }
 }
 
@@ -171,25 +147,39 @@ impl BlockType {
     }
 }
 
-impl<'a> Drawable for DrawableBlock<'a> {
-    fn draw(
-        &self,
-        renderer: &mut Renderer,
-        cam: &Camera,
-        res: &mut ResourceManager,
-        tick: u32,
-    ) {
-        let block = self.block;
-        let (x, y) = self.pos;
+impl<'a> Drawable for ThemedBlock<'a> {
+    fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
+        let block = data.object.block;
+        let (x, y) = data.position;
+        let size = (BLOCK_SIZE as f64 * data.scale) as u32;
 
         let visible = block.is_visible();
-        let in_view = cam.in_view(rect!(x, y, BLOCK_SIZE, BLOCK_SIZE));
+        let in_view = data.camera.in_view(rect!(x, y, size, size));
 
-        if visible && in_view {
-            let frame = block.animation_frame(res, self.theme, tick);
-            if let Some(frame) = frame {
-                frame.draw(renderer, cam, (x, y))
-            }
+        if !visible || !in_view {
+            return;
         }
+
+        let kind = block.kind;
+        let theme = data.object.theme;
+
+        let sprite_x = (kind.frame_index(data.tick) * BLOCK_SIZE) as i32;
+        let sprite_y = (kind.variant_index(theme) * BLOCK_SIZE) as i32;
+        let texture_name = kind
+            .texture_name()
+            .expect("Visible block has no associated texture name!");
+        let texture = res.texture(texture_name);
+        let src_region = rect!(sprite_x, sprite_y, BLOCK_SIZE, BLOCK_SIZE);
+
+        let (cam_x, cam_y) = data.camera.translate_coords((x, y));
+        let dest = rect!(cam_x, cam_y, size, size);
+
+        dbg!(data.position);
+
+
+        data.renderer
+            .canvas
+            .copy(&texture, src_region, dest)
+            .unwrap();
     }
 }

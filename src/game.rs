@@ -28,7 +28,7 @@ impl Score {
 impl Game {
     pub fn new(_res: &ResourceManager) -> Game {
         let player = Player::new(0, 0);
-        let camera = Camera::new(player.position_x(), player.position_y());
+        let camera = Camera::new(player.x(), player.y());
         Game {
             player,
             camera,
@@ -45,11 +45,10 @@ impl Game {
         // TODO: remove tests
         renderer.canvas.set_draw_color(Color::RGB(88, 100, 255));
         renderer.canvas.clear();
-        self.player.draw(
-            renderer,
-            &self.camera,
-            &mut state.resources,
-            state.frame,
-        );
+        renderer
+            .draw(&self.player)
+            .camera(self.camera)
+            .tick(state.frame)
+            .show(&mut state.resources);
     }
 }

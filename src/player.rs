@@ -61,31 +61,25 @@ impl Player {
         self.position
     }
 
-    pub fn position_x(&self) -> i32 {
+    pub fn x(&self) -> i32 {
         self.position.0
     }
 
-    pub fn position_y(&self) -> i32 {
+    pub fn y(&self) -> i32 {
         self.position.1
     }
 }
 
 impl Drawable for Player {
-    fn draw(
-        &self,
-        renderer: &mut Renderer,
-        _cam: &Camera,
-        _res: &mut ResourceManager,
-        _frame: u32,
-    ) {
-        renderer.canvas.set_draw_color(Color::RGB(255, 0, 0));
-        let rect = Rect::new(
-            self.position_x(),
-            self.position_y(),
-            PLAYER_WIDTH as u32,
-            PLAYER_HEIGHT as u32,
+    fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
+        data.renderer.canvas.set_draw_color(Color::RGB(255, 0, 0));
+        let rect = rect!(
+            data.object.x(),
+            data.object.y(),
+            PLAYER_WIDTH,
+            PLAYER_HEIGHT
         );
-        renderer
+        data.renderer
             .canvas
             .fill_rect(rect)
             .expect("Failed to fill a rectangle!");

@@ -16,7 +16,7 @@ use std::mem::replace;
 pub struct GameState<'a> {
     activity:   Activity,
     event_pump: EventPump,
-    state:       SharedState<'a>,
+    state:      SharedState<'a>,
 }
 
 pub struct SharedState<'a> {
@@ -37,6 +37,18 @@ pub enum Activity {
     Editor(Editor),
     FileInputScreen,
     MainMenu(MainMenu),
+}
+
+#[derive(PartialEq, Eq)]
+pub enum ActivityResult {
+    Exited,
+    Active,
+}
+
+impl ActivityResult {
+    pub fn exited(self) -> bool {
+        self == ActivityResult::Exited
+    }
 }
 
 impl TextInput<'_> {
@@ -204,7 +216,7 @@ impl GameState<'_> {
                 }
             },
             Activity::Editor(editor) => {
-                if editor.update(&mut self.state) {
+                if editor.update(&mut self.state).exited() {
                     replace(
                         &mut self.activity,
                         Activity::new_main_menu(&self.state.resources),
@@ -235,30 +247,31 @@ impl GameState<'_> {
                 renderer.clear(Color::RGB(0, 0, 0));
                 let prompt =
                     TextBuilder::new("Level name (without extension):")
-                        .position(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 100)
-                        .scale(0.25)
                         .alignment(TextAlignment::TotalCenter)
                         .build();
 
                 let input = self.state.text_input.text();
                 let text = TextBuilder::new(&input)
-                    .position(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
                     .alignment(TextAlignment::TotalCenter)
-                    .scale(0.2)
                     .build();
 
-                prompt.draw(
-                    renderer,
-                    &Camera::default(),
-                    &mut self.state.resources,
-                    self.state.frame,
-                );
-                text.draw(
-                    renderer,
-                    &Camera::default(),
-                    &mut self.state.resources,
-                    self.state.frame,
-                );
+                renderer
+                    .draw(&prompt)
+                    .position((
+                        SCREEN_WIDTH as i32 / 2,
+                        SCREEN_HEIGHT as i32 / 2 - 100,
+                    ))
+                    .scale(0.2)
+                    .show(&mut self.state.resources);
+
+                renderer
+                    .draw(&text)
+                    .position((
+                        SCREEN_WIDTH as i32 / 2,
+                        SCREEN_HEIGHT as i32 / 2,
+                    ))
+                    .scale(0.25)
+                    .show(&mut self.state.resources);
             },
         }
 

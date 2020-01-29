@@ -151,43 +151,53 @@ pub trait OnClick<Arg, Val> {
 }
 
 impl<T> Drawable for Button<T> {
-    fn draw(
-        &self,
-        renderer: &mut Renderer,
-        cam: &Camera,
-        res: &mut ResourceManager,
-        tick: u32,
-    ) {
+    fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
         let button_color = Color::RGB(255, 153, 0);
-        renderer.canvas.set_draw_color(button_color);
-        renderer
+        let text_color = Color::RGB(255, 255, 255);
+
+        let (offset_x, offset_y) = data.position;
+
+        let mut rect = data.object.rect().clone();
+        let (width, height) = rect.size();
+        let scaled_w = (width as f64 * data.scale) as u32;
+        let scaled_h = (height as f64 * data.scale) as u32;
+        rect.resize(scaled_w, scaled_h);
+        rect.offset(offset_x, offset_y);
+
+        data.renderer.canvas.set_draw_color(button_color);
+        data.renderer
             .canvas
-            .fill_rect(*self.rect())
+            .fill_rect(*data.object.rect())
             .expect("Failed to draw a button!");
 
-        let center = self.rect().center();
-        let text = PositionedText::new(
-            self.text(),
-            (center.x(), center.y()),
-            TextAlignment::TotalCenter,
-            0.25,
-            Color::RGB(255, 255, 255),
-        );
+        let center = data.object.rect().center();
+        let text = TextBuilder::new(data.object.text())
+            .alignment(TextAlignment::TotalCenter)
+            .color(text_color)
+            .build();
 
-        text.draw(renderer, cam, res, tick);
+        data.renderer
+            .draw(&text)
+            // .pass(&data)
+            .tick(data.tick)
+            .camera(data.camera)
+            .position((center.x(), center.y()))
+            .scale(0.25)
+            .show(res);
     }
 }
 
 impl<T> Drawable for ButtonColumn<T> {
-    fn draw(
-        &self,
-        renderer: &mut Renderer,
-        cam: &Camera,
-        res: &mut ResourceManager,
-        tick: u32,
-    ) {
-        for button in self.buttons.iter() {
-            button.draw(renderer, cam, res, tick);
+    fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
+        for button in data.object.buttons.iter() {
+            // data.renderer.draw(button).pass(&data).show(res);
+            data.renderer
+                .draw(button)
+                .tick(data.tick)
+                .camera(data.camera)
+                .position(data.position)
+                .scale(data.scale)
+                .show(res);
         }
     }
 }

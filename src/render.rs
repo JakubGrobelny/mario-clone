@@ -23,15 +23,10 @@ pub struct Renderer {
     pub texture_creator: TextureCreator<WindowContext>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Camera {
     x: i32,
     y: i32,
-}
-
-pub struct AnimationFrame<'a> {
-    pub texture: Rc<Texture<'a>>,
-    pub region:  Rect,
 }
 
 pub enum TextAlignment {
@@ -42,67 +37,60 @@ pub enum TextAlignment {
 }
 
 pub struct DrawCall<'a, T: Drawable> {
-    object: &'a T,
-    scale: f64,
-    position: (i32, i32),
-    camera: Option<Camera>,
+    pub object:   &'a T,
+    pub tick:     u32,
+    pub scale:    f64,
+    pub position: (i32, i32),
+    pub camera:   Camera,
+    pub renderer: &'a mut Renderer,
 }
 
-pub struct PositionedText<'a> {
+pub struct Text<'a> {
     text:      &'a str,
-    position:  (i32, i32),
     alignment: TextAlignment,
-    scale:     f64,
     color:     Color,
 }
 
 pub struct TextBuilder<'a> {
     text:      &'a str,
-    position:  Option<(i32, i32)>,
     alignment: Option<TextAlignment>,
-    scale:     Option<f64>,
     color:     Option<Color>,
 }
 
-pub trait Drawable {
-    fn draw(
-        &self,
-        canvas: &mut Renderer,
-        cam: &Camera,
-        res: &mut ResourceManager,
-        tick: u32,
-    );
+pub trait Drawable: Sized {
+    fn show(data: DrawCall<Self>, res: &mut ResourceManager);
+}
+
+impl Drawable for Rect {
+    fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
+        let (shift_x, shift_y) = data.position;
+        let width = (data.object.width() as f64 * data.scale) as f64;
+        let height = (data.object.height() as f64 * data.scale) as f64;
+
+        let mut rect = rect![
+            data.object.x() + shift_x,
+            data.object.y() + shift_y,
+            width,
+            height
+        ];
+        data.camera.move_rect(&mut rect);
+
+        data.renderer.canvas.set_draw_color(Color::RGB(255, 0, 0));
+        data.renderer.canvas.fill_rect(rect);
+    }
 }
 
 impl<'a> TextBuilder<'a> {
     pub fn new(text: &str) -> TextBuilder {
         TextBuilder {
             text,
-            position: None,
             alignment: None,
-            scale: None,
             color: None,
         }
     }
 
-    pub fn position<A, B>(mut self, x: A, y: B) -> TextBuilder<'a>
-    where
-        A: TryInto<i32>,
-        B: TryInto<i32>,
-    {
-        let x: i32 = x.try_into().unwrap_or(0);
-        let y: i32 = y.try_into().unwrap_or(0);
-        self.position = Some((x as i32, y as i32));
-        self
-    }
-
     pub fn alignment(mut self, align: TextAlignment) -> TextBuilder<'a> {
         self.alignment = Some(align);
-        self
-    }
-
-    pub fn scale(mut self, scale: f64) -> TextBuilder<'a> {
-        self.scale = Some(scale);
         self
     }
 
@@ -111,38 +99,34 @@ impl<'a> TextBuilder<'a> {
         self
     }
 
-    pub fn build(self) -> PositionedText<'a> {
-        PositionedText::new(
+    pub fn build(self) -> Text<'a> {
+        Text::new(
             self.text,
-            self.position.unwrap_or((0, 0)),
             self.alignment.unwrap_or(TextAlignment::Left),
-            self.scale.unwrap_or(1.0),
             self.color.unwrap_or(Color::RGB(255, 255, 255)),
         )
     }
 }
 
-impl PositionedText<'_> {
-    pub fn new(
-        text: &str,
-        position: (i32, i32),
-        alignment: TextAlignment,
-        scale: f64,
-        color: Color,
-    ) -> PositionedText {
-        PositionedText {
+impl Text<'_> {
+    pub fn new(text: &str, alignment: TextAlignment, color: Color) -> Text {
+        Text {
             text,
-            position,
             alignment,
-            scale,
             color,
         }
     }
 
-    fn aligned_rect(&self, texture_w: u32, texture_h: u32) -> Rect {
-        let (x0, y0) = self.position;
-        let width = (f64::from(texture_w) * self.scale) as i32;
-        let height = (f64::from(texture_h) * self.scale) as i32;
+    fn aligned_rect(
+        &self,
+        scale: f64,
+        pos: (i32, i32),
+        texture_width: u32,
+        texture_height: u32,
+    ) -> Rect {
+        let (x0, y0) = pos;
+        let width = (f64::from(texture_width) * scale) as i32;
+        let height = (f64::from(texture_height) * scale) as i32;
         let (x, y) = match self.alignment {
             TextAlignment::Center => (x0 - width / 2, y0),
             TextAlignment::Left => (x0, y0),
@@ -173,6 +157,56 @@ impl Renderer {
         self.canvas
             .fill_rect(rect!(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
             .unwrap();
+    }
+
+    pub fn draw<'a, T: Drawable>(&'a mut self, obj: &'a T) -> DrawCall<T> {
+        DrawCall {
+            object:   obj,
+            renderer: self,
+            camera:   Camera::default(),
+            tick:     0,
+            scale:    1.0,
+            position: (0, 0),
+        }
+    }
+}
+
+
+#[macro_export]
+macro_rules! pass_draw {
+    ($call:expr, $object:expr) => {
+        $call.renderer
+            .draw($object)
+            .camera($call.camera)
+            .position($call.position)
+            .scale($call.scale)
+            .tick($call.tick)
+    };
+}
+
+impl<'a, T: Drawable> DrawCall<'a, T> {
+    pub fn show(self, res: &mut ResourceManager) {
+        T::show(self, res);
+    }
+
+    pub fn tick(mut self, tick: u32) -> Self {
+        self.tick = tick;
+        self
+    }
+
+    pub fn camera(mut self, camera: Camera) -> Self {
+        self.camera = camera;
+        self
+    }
+
+    pub fn position(mut self, pos: (i32, i32)) -> Self {
+        self.position = pos;
+        self
+    }
+
+    pub fn scale(mut self, scale: f64) -> Self {
+        self.scale = scale;
+        self
     }
 }
 
@@ -229,23 +263,17 @@ impl Camera {
     }
 }
 
-impl Drawable for PositionedText<'_> {
-    fn draw(
-        &self,
-        renderer: &mut Renderer,
-        cam: &Camera,
-        res: &mut ResourceManager,
-        _tick: u32,
-    ) {
-        if self.text.is_empty() {
+impl Drawable for Text<'_> {
+    fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
+        if data.object.text.is_empty() {
             return;
         }
 
-        let creator = &renderer.texture_creator;
+        let creator = &data.renderer.texture_creator;
         let texture = res
             .font()
-            .render(self.text)
-            .blended(self.color)
+            .render(data.object.text)
+            .blended(data.object.color)
             .map_err(|err| err.to_string())
             .and_then(|surface| {
                 creator
@@ -255,9 +283,15 @@ impl Drawable for PositionedText<'_> {
             .unwrap_or_else(|err| panic_with_messagebox!("{}", err));
 
         let TextureQuery { width, height, .. } = texture.query();
-        let mut target = self.aligned_rect(width, height);
-        cam.move_rect(&mut target);
-        renderer.canvas.copy(&texture, None, Some(target)).unwrap();
+        let mut target =
+            data.object
+                .aligned_rect(data.scale, data.position, width, height);
+
+        data.camera.move_rect(&mut target);
+        data.renderer
+            .canvas
+            .copy(&texture, None, Some(target))
+            .unwrap();
     }
 }
 
@@ -278,16 +312,5 @@ pub fn draw_grid(renderer: &mut Renderer, camera: &Camera) {
         let from = Point::new(0, y);
         let to = Point::new(SCREEN_WIDTH as i32, y);
         renderer.canvas.draw_line(from, to).unwrap();
-    }
-}
-
-impl AnimationFrame<'_> {
-    pub fn draw(&self, renderer: &mut Renderer, cam: &Camera, pos: (i32, i32)) {
-        let (x, y) = cam.translate_coords(pos);
-        let dest = rect!(x, y, self.region.width(), self.region.height());
-        renderer
-            .canvas
-            .copy(&self.texture, self.region, dest)
-            .unwrap();
     }
 }

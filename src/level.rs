@@ -122,28 +122,21 @@ impl From<LevelTheme> for Color {
 }
 
 impl Drawable for Level {
-    fn draw(
-        &self,
-        renderer: &mut Renderer,
-        cam: &Camera,
-        res: &mut ResourceManager,
-        tick: u32,
-    ) {
-        let color = Color::from(self.theme);
-        renderer.canvas.set_draw_color(color);
-        renderer.canvas.clear();
+    fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
+        let color = Color::from(data.object.theme);
+        data.renderer.canvas.set_draw_color(color);
+        data.renderer.canvas.clear();
 
-        for (y, row) in self.blocks.iter().enumerate() {
+        for (y, row) in data.object.blocks.iter().enumerate() {
             for (x, block) in row.iter().enumerate() {
                 let x = x as i32 * BLOCK_SIZE as i32;
                 let y = y as i32 * BLOCK_SIZE as i32;
-                let block = DrawableBlock {
+                let block = ThemedBlock {
                     block: &block,
-                    pos:   (x, y),
-                    theme: self.theme,
+                    theme: data.object.theme,
                 };
 
-                block.draw(renderer, cam, res, tick);
+                pass_draw!(data, &block).position((x, y)).show(res);
             }
         }
     }

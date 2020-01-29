@@ -93,32 +93,35 @@ impl Editor {
             self.selected.unwrap().prev()
         };
 
-        self.selected = dbg!(next);
+        self.selected = next;
     }
 
-    pub fn update(&mut self, state: &mut SharedState) -> bool {
+    fn update_menu(&mut self, state: &mut SharedState) -> ActivityResult {
+        let effect = self.menu.effect_if_clicked(&state.controller);
+        if let Some(effect) = effect {
+            match effect {
+                ButtonEffect::Menu => {
+                    return ActivityResult::Exited;
+                },
+                ButtonEffect::Resume => {
+                    self.paused = false;
+                },
+                ButtonEffect::Save => {
+                    state.resources.save_level(&self.level_name, &self.level);
+                    self.paused = false;
+                },
+            }
+        }
+        ActivityResult::Active
+    }
+
+    pub fn update(&mut self, state: &mut SharedState) -> ActivityResult {
         if state.controller.was_key_pressed(Key::Escape) {
             self.paused ^= true;
         }
 
         if self.paused {
-            let effect = self.menu.effect_if_clicked(&state.controller);
-            if let Some(effect) = effect {
-                match effect {
-                    ButtonEffect::Menu => {
-                        return true;
-                    },
-                    ButtonEffect::Resume => {
-                        self.paused = false;
-                    },
-                    ButtonEffect::Save => {
-                        state
-                            .resources
-                            .save_level(&self.level_name, &self.level);
-                        self.paused = false;
-                    },
-                }
-            }
+            self.update_menu(state)
         } else {
             self.move_camera(state);
             if state.controller.was_key_pressed(Key::Left) {
@@ -128,41 +131,37 @@ impl Editor {
             }
 
             self.swap_selection(state);
+            ActivityResult::Active
         }
-        false
     }
 
     pub fn draw(&self, renderer: &mut Renderer, state: &mut SharedState) {
-        self.level.draw(
-            renderer,
-            &self.camera,
-            &mut state.resources,
-            state.frame,
-        );
+        renderer
+            .draw(&self.level)
+            .camera(self.camera)
+            .tick(state.frame)
+            .show(&mut state.resources);
 
         if self.paused {
             renderer.fill(Color::RGBA(0, 0, 0, 128));
-            self.menu.draw(
-                renderer,
-                &Camera::default(),
-                &mut state.resources,
-                state.frame,
-            );
+            renderer
+                .draw(&self.menu)
+                .tick(state.frame)
+                .show(&mut state.resources);
         } else {
             draw_grid(renderer, &self.camera);
             if let Some(selection) = self.selected {
                 let pos = state.controller.mouse().pos();
-                let block = DrawableBlock {
+                let block = ThemedBlock {
                     block: &selection,
-                    pos,
                     theme: self.level.theme,
                 };
-                block.draw(
-                    renderer,
-                    &Camera::default(),
-                    &mut state.resources,
-                    state.frame,
-                );
+                renderer
+                    .draw(&block)
+                    .position(pos)
+                    .scale(0.75)
+                    .tick(state.frame)
+                    .show(&mut state.resources);
             }
         }
     }

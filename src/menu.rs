@@ -62,11 +62,6 @@ impl MainMenu {
     pub fn draw(&self, renderer: &mut Renderer, state: &mut SharedState) {
         renderer.canvas.set_draw_color(Color::RGB(88, 100, 255));
         renderer.canvas.clear();
-        self.buttons.draw(
-            renderer,
-            &Camera::default(),
-            &mut state.resources,
-            state.frame,
-        );
+        renderer.draw(&self.buttons).show(&mut state.resources);
     }
 }
