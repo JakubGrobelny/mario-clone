@@ -53,6 +53,7 @@ impl From<Keycode> for Key {
             Keycode::Left => Key::Left,
             Keycode::Right => Key::Right,
             Keycode::Escape => Key::Escape,
+            Keycode::KpEnter => Key::Enter,
             Keycode::LShift => Key::Sprint,
             Keycode::Return => Key::Enter,
             _ => Key::Invalid,

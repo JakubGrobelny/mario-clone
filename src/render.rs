@@ -41,6 +41,13 @@ pub enum TextAlignment {
     TotalCenter,
 }
 
+pub struct DrawCall<'a, T: Drawable> {
+    object: &'a T,
+    scale: f64,
+    position: (i32, i32),
+    camera: Option<Camera>,
+}
+
 pub struct PositionedText<'a> {
     text:      &'a str,
     position:  (i32, i32),

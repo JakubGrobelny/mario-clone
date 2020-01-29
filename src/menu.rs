@@ -6,33 +6,33 @@ use crate::state::*;
 
 use sdl2::pixels::Color;
 
-type MainMenuButtonFunc = fn(&mut SharedGameData) -> Option<Activity>;
+type MainMenuButtonFunc = fn(&mut SharedState) -> Option<Activity>;
 
 pub struct MainMenu {
     buttons: ButtonColumn<MainMenuButtonFunc>,
 }
 
-impl<'a> OnClick<&mut SharedGameData<'a>, Option<Activity>>
+impl<'a> OnClick<&mut SharedState<'a>, Option<Activity>>
     for Button<MainMenuButtonFunc>
 {
-    fn on_click(&self, data: &mut SharedGameData) -> Option<Activity> {
-        (self.effect)(data)
+    fn on_click(&self, state: &mut SharedState) -> Option<Activity> {
+        (self.effect)(state)
     }
 }
 
 impl MainMenu {
     pub fn new(_res: &ResourceManager) -> MainMenu {
-        let on_exit: MainMenuButtonFunc = |data: &mut SharedGameData| {
-            data.should_exit = true;
+        let on_exit: MainMenuButtonFunc = |state: &mut SharedState| {
+            state.should_exit = true;
             None
         };
 
-        let on_start: MainMenuButtonFunc = |data: &mut SharedGameData| {
-            Some(Activity::new_game(&data.resources))
+        let on_start: MainMenuButtonFunc = |state: &mut SharedState| {
+            Some(Activity::new_game(&state.resources))
         };
 
         let on_editor: MainMenuButtonFunc =
-            |_: &mut SharedGameData| Some(Activity::FileInputScreen);
+            |_: &mut SharedState| Some(Activity::FileInputScreen);
 
         const BUTTONS_Y_OFFSET: i32 = 150;
 
@@ -48,25 +48,25 @@ impl MainMenu {
 
     pub fn update_and_get_activity(
         &self,
-        data: &mut SharedGameData,
+        state: &mut SharedState,
     ) -> Option<Activity> {
-        if data.controller.was_key_pressed(Key::Escape) {
-            data.should_exit = true;
+        if state.controller.was_key_pressed(Key::Escape) {
+            state.should_exit = true;
         }
         self.buttons
-            .effect_if_clicked(&data.controller)
-            .map(|effect| effect(data))
+            .effect_if_clicked(&state.controller)
+            .map(|effect| effect(state))
             .unwrap_or(None)
     }
 
-    pub fn draw(&self, renderer: &mut Renderer, data: &mut SharedGameData) {
+    pub fn draw(&self, renderer: &mut Renderer, state: &mut SharedState) {
         renderer.canvas.set_draw_color(Color::RGB(88, 100, 255));
         renderer.canvas.clear();
         self.buttons.draw(
             renderer,
             &Camera::default(),
-            &mut data.resources,
-            data.frame,
+            &mut state.resources,
+            state.frame,
         );
     }
 }

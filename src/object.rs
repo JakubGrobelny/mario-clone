@@ -1,7 +1,5 @@
 use crate::block::*;
 use crate::hitbox::*;
-use crate::level::*;
-use crate::resource::*;
 
 use sdl2::render::Texture;
 

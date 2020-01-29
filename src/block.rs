@@ -8,20 +8,29 @@ use num_traits::FromPrimitive;
 
 pub const BLOCK_SIZE: u32 = 64;
 
-#[derive(Copy, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Copy, Clone, Deserialize, Serialize, PartialEq, Eq, Debug)]
 pub struct Block {
     kind:     BlockType,
     contents: Option<BlockContents>,
     hidden:   bool,
 }
 
-#[derive(Copy, Clone, Deserialize, Serialize, PartialEq, Eq, FromPrimitive)]
+#[derive(Copy, Clone)]
+#[derive(Deserialize, Serialize)]
+#[derive(PartialEq, Eq)]
+#[derive(FromPrimitive, Debug)]
 #[repr(u8)]
 pub enum BlockType {
-    Bricks = 1,
+    Bricks = 0,
     Rock,
     QuestionMark,
     Air,
+}
+
+pub struct DrawableBlock<'a> {
+    pub block: &'a Block,
+    pub pos:   (i32, i32),
+    pub theme: LevelTheme,
 }
 
 const MAX_BLOCK: u8 = BlockType::Air as u8;
@@ -57,6 +66,14 @@ impl Block {
             hidden,
             contents: None,
         }
+    }
+
+    pub fn next(&self) -> Option<Block> {
+        self.kind.next().map(Block::from)
+    }
+
+    pub fn prev(&self) -> Option<Block> {
+        self.kind.prev().map(Block::from)
     }
 
     pub fn is_visible(&self) -> bool {
@@ -100,6 +117,17 @@ impl Default for BlockType {
 }
 
 impl BlockType {
+    fn next(self) -> Option<BlockType> {
+        let next_id = (self as u8 + 1) % MAX_BLOCK;
+        FromPrimitive::from_u8(next_id)
+    }
+
+    fn prev(self) -> Option<BlockType> {
+        let id = self as u8;
+        let prev_id = if id == 0 { MAX_BLOCK - 1 } else { id - 1 };
+        FromPrimitive::from_u8(prev_id)
+    }
+
     fn texture_name(self) -> Option<&'static str> {
         match self {
             BlockType::Air => None,
@@ -139,6 +167,29 @@ impl BlockType {
             theme as u32
         } else {
             0
+        }
+    }
+}
+
+impl<'a> Drawable for DrawableBlock<'a> {
+    fn draw(
+        &self,
+        renderer: &mut Renderer,
+        cam: &Camera,
+        res: &mut ResourceManager,
+        tick: u32,
+    ) {
+        let block = self.block;
+        let (x, y) = self.pos;
+
+        let visible = block.is_visible();
+        let in_view = cam.in_view(rect!(x, y, BLOCK_SIZE, BLOCK_SIZE));
+
+        if visible && in_view {
+            let frame = block.animation_frame(res, self.theme, tick);
+            if let Some(frame) = frame {
+                frame.draw(renderer, cam, (x, y))
+            }
         }
     }
 }

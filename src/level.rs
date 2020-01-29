@@ -73,7 +73,7 @@ impl From<LevelJSON> for Level {
     fn from(json: LevelJSON) -> Level {
         if json.blocks.len() != LEVEL_HEIGHT * LEVEL_WIDTH {
             panic_with_messagebox!(
-                "Corrupted level data (invalid level size)!"
+                "Corrupted level state (invalid level size)!"
             );
         }
 
@@ -137,16 +137,13 @@ impl Drawable for Level {
             for (x, block) in row.iter().enumerate() {
                 let x = x as i32 * BLOCK_SIZE as i32;
                 let y = y as i32 * BLOCK_SIZE as i32;
+                let block = DrawableBlock {
+                    block: &block,
+                    pos:   (x, y),
+                    theme: self.theme,
+                };
 
-                let visible = block.is_visible();
-                let in_view = cam.in_view(rect!(x, y, BLOCK_SIZE, BLOCK_SIZE));
-
-                if visible && in_view {
-                    let frame = block.animation_frame(res, self.theme, tick);
-                    if let Some(frame) = frame {
-                        frame.draw(renderer, cam, (x, y))
-                    }
-                }
+                block.draw(renderer, cam, res, tick);
             }
         }
     }

@@ -36,20 +36,20 @@ impl Game {
         }
     }
 
-    pub fn update(&mut self, game_data: &mut SharedGameData) {
-        self.player.accelerate(&game_data.controller);
+    pub fn update(&mut self, state: &mut SharedState) {
+        self.player.accelerate(&state.controller);
         self.player.apply_speed();
     }
 
-    pub fn draw(&self, renderer: &mut Renderer, data: &mut SharedGameData) {
+    pub fn draw(&self, renderer: &mut Renderer, state: &mut SharedState) {
         // TODO: remove tests
         renderer.canvas.set_draw_color(Color::RGB(88, 100, 255));
         renderer.canvas.clear();
         self.player.draw(
             renderer,
             &self.camera,
-            &mut data.resources,
-            data.frame,
+            &mut state.resources,
+            state.frame,
         );
     }
 }

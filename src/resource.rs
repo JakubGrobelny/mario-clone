@@ -35,7 +35,7 @@ where
 
 pub trait ResourceLoader<'a, Resource> {
     type Args: ?Sized;
-    fn load(&'a self, data: &Self::Args) -> Result<Resource>;
+    fn load(&'a self, state: &Self::Args) -> Result<Resource>;
 }
 
 impl<'a, Key, Resource, Loader> ResourceCache<'a, Key, Resource, Loader>

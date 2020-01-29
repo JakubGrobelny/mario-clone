@@ -16,10 +16,10 @@ use std::mem::replace;
 pub struct GameState<'a> {
     activity:   Activity,
     event_pump: EventPump,
-    data:       SharedGameData<'a>,
+    state:       SharedState<'a>,
 }
 
-pub struct SharedGameData<'a> {
+pub struct SharedState<'a> {
     pub should_exit: bool,
     pub controller:  Controller,
     pub resources:   ResourceManager<'a>,
@@ -90,12 +90,12 @@ impl Activity {
     }
 }
 
-impl SharedGameData<'_> {
+impl SharedState<'_> {
     pub fn new<'a>(
         resources: ResourceManager<'a>,
         text_input: TextInput<'a>,
-    ) -> SharedGameData<'a> {
-        SharedGameData {
+    ) -> SharedState<'a> {
+        SharedState {
             should_exit: false,
             controller: Controller::new(),
             resources,
@@ -113,41 +113,41 @@ impl GameState<'_> {
     ) -> Result<GameState<'a>> {
         let event_pump = context.event_pump()?;
         let activity = Activity::new_main_menu(&resources);
-        let shared_data = SharedGameData::new(resources, text_input);
+        let shared_state = SharedState::new(resources, text_input);
 
         Ok(GameState {
             event_pump,
             activity,
-            data: shared_data,
+            state: shared_state,
         })
     }
 
     pub fn resources(&self) -> &ResourceManager {
-        &self.data.resources
+        &self.state.resources
     }
 
     pub fn frame(&self) -> u32 {
-        self.data.frame
+        self.state.frame
     }
 
     pub fn controller(&self) -> &Controller {
-        &self.data.controller
+        &self.state.controller
     }
 
     pub fn should_exit(&self) -> bool {
-        self.data.should_exit
+        self.state.should_exit
     }
 
     pub fn update(&mut self) {
-        if self.data.frame > 1_024 {
-            self.data.frame = 0;
+        if self.state.frame > 1_024 {
+            self.state.frame = 0;
         } else {
-            self.data.frame += 1;
+            self.state.frame += 1;
         }
 
         let events: Vec<_> = self.event_pump.poll_iter().collect();
 
-        self.data.controller.update(&events);
+        self.state.controller.update(&events);
         self.process_events(&events);
 
         if self.should_exit() {
@@ -161,18 +161,18 @@ impl GameState<'_> {
         for event in events.iter() {
             match event {
                 Event::Quit { .. } => {
-                    self.data.should_exit = true;
+                    self.state.should_exit = true;
                     break;
                 },
                 Event::TextInput { text, .. } => {
-                    self.data.text_input.input(text);
+                    self.state.text_input.input(text);
                 },
                 Event::KeyDown {
                     keycode: Some(Keycode::Backspace),
                     ..
                 } => {
-                    if self.data.text_input.is_active() {
-                        self.data.text_input.backspace();
+                    if self.state.text_input.is_active() {
+                        self.state.text_input.backspace();
                     }
                 },
                 _ => (),
@@ -183,36 +183,36 @@ impl GameState<'_> {
     fn update_activity(&mut self) {
         match &mut self.activity {
             Activity::Game(game) => {
-                game.update(&mut self.data);
+                game.update(&mut self.state);
             },
             activity @ Activity::FileInputScreen => {
-                let reading_text = self.data.text_input.is_active();
+                let reading_text = self.state.text_input.is_active();
                 if !reading_text {
-                    self.data.text_input.start();
-                } else if self.data.controller.was_key_pressed(Key::Enter) {
-                    let file_name = self.data.text_input.end();
+                    self.state.text_input.start();
+                } else if self.state.controller.was_key_pressed(Key::Enter) {
+                    let file_name = self.state.text_input.end();
                     replace(
                         activity,
-                        Activity::new_editor(&self.data.resources, &file_name),
+                        Activity::new_editor(&self.state.resources, &file_name),
                     );
-                } else if self.data.controller.was_key_pressed(Key::Escape) {
-                    self.data.text_input.end();
+                } else if self.state.controller.was_key_pressed(Key::Escape) {
+                    self.state.text_input.end();
                     replace(
                         activity,
-                        Activity::new_main_menu(&self.data.resources),
+                        Activity::new_main_menu(&self.state.resources),
                     );
                 }
             },
             Activity::Editor(editor) => {
-                if editor.update(&mut self.data) {
+                if editor.update(&mut self.state) {
                     replace(
                         &mut self.activity,
-                        Activity::new_main_menu(&self.data.resources),
+                        Activity::new_main_menu(&self.state.resources),
                     );
                 }
             },
             Activity::MainMenu(menu) => {
-                let activity = menu.update_and_get_activity(&mut self.data);
+                let activity = menu.update_and_get_activity(&mut self.state);
                 if let Some(activity) = activity {
                     replace(&mut self.activity, activity);
                 }
@@ -223,13 +223,13 @@ impl GameState<'_> {
     pub fn draw(&mut self, renderer: &mut Renderer) {
         match &self.activity {
             Activity::Game(game) => {
-                game.draw(renderer, &mut self.data);
+                game.draw(renderer, &mut self.state);
             },
             Activity::Editor(editor) => {
-                editor.draw(renderer, &mut self.data);
+                editor.draw(renderer, &mut self.state);
             },
             Activity::MainMenu(menu) => {
-                menu.draw(renderer, &mut self.data);
+                menu.draw(renderer, &mut self.state);
             },
             Activity::FileInputScreen => {
                 renderer.clear(Color::RGB(0, 0, 0));
@@ -240,7 +240,7 @@ impl GameState<'_> {
                         .alignment(TextAlignment::TotalCenter)
                         .build();
 
-                let input = self.data.text_input.text();
+                let input = self.state.text_input.text();
                 let text = TextBuilder::new(&input)
                     .position(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
                     .alignment(TextAlignment::TotalCenter)
@@ -250,14 +250,14 @@ impl GameState<'_> {
                 prompt.draw(
                     renderer,
                     &Camera::default(),
-                    &mut self.data.resources,
-                    self.data.frame,
+                    &mut self.state.resources,
+                    self.state.frame,
                 );
                 text.draw(
                     renderer,
                     &Camera::default(),
-                    &mut self.data.resources,
-                    self.data.frame,
+                    &mut self.state.resources,
+                    self.state.frame,
                 );
             },
         }

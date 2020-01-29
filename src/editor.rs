@@ -14,13 +14,21 @@ pub struct Editor {
     level_name: String,
     paused:     bool,
     menu:       ButtonColumn<ButtonEffect>,
-    selected:   BlockType,
+    selected:   Option<Block>,
+    layer:      EditorLayer,
 }
 
 enum ButtonEffect {
     Menu,
     Save,
     Resume,
+}
+
+enum EditorLayer {
+    Blocks,
+    Background,
+    Collectibles,
+    Enemies,
 }
 
 impl Editor {
@@ -38,15 +46,16 @@ impl Editor {
             level,
             level_name: String::from(name),
             menu: buttons,
-            selected: BlockType::default(),
+            selected: Some(Block::from(BlockType::Bricks)),
+            layer: EditorLayer::Blocks,
         }
     }
 
-    fn move_camera(&mut self, game_data: &mut SharedGameData) {
+    fn move_camera(&mut self, state: &mut SharedState) {
         const MOVEMENT_MARGIN: i32 = BLOCK_SIZE as i32 - 1;
         const MOVEMENT_SPEED: i32 = 10;
-        let (x, y) = game_data.controller.mouse().pos();
-        let shift_pressed = game_data.controller.is_key_active(Key::Sprint);
+        let (x, y) = state.controller.mouse().pos();
+        let shift_pressed = state.controller.is_key_active(Key::Sprint);
         let accel = if shift_pressed { 3 } else { 1 };
 
         let x_movement = if x < MOVEMENT_MARGIN {
@@ -68,15 +77,33 @@ impl Editor {
         self.camera.shift((x_movement * accel, y_movement * accel));
     }
 
-    pub fn update(&mut self, game_data: &mut SharedGameData) -> bool {
-        if game_data.controller.was_key_pressed(Key::Escape) {
+    fn swap_selection(&mut self, state: &mut SharedState) {
+        let scroll = state.controller.mouse().scroll();
+        if scroll == 0 {
+            return;
+        }
+
+        if self.selected.is_none() {
+            self.selected = Some(Block::default());
+        }
+
+        let next = if scroll > 0 {
+            self.selected.unwrap().next()
+        } else {
+            self.selected.unwrap().prev()
+        };
+
+        self.selected = dbg!(next);
+    }
+
+    pub fn update(&mut self, state: &mut SharedState) -> bool {
+        if state.controller.was_key_pressed(Key::Escape) {
             self.paused ^= true;
         }
 
         if self.paused {
-            if let Some(effect) =
-                self.menu.effect_if_clicked(&game_data.controller)
-            {
+            let effect = self.menu.effect_if_clicked(&state.controller);
+            if let Some(effect) = effect {
                 match effect {
                     ButtonEffect::Menu => {
                         return true;
@@ -85,7 +112,7 @@ impl Editor {
                         self.paused = false;
                     },
                     ButtonEffect::Save => {
-                        game_data
+                        state
                             .resources
                             .save_level(&self.level_name, &self.level);
                         self.paused = false;
@@ -93,33 +120,50 @@ impl Editor {
                 }
             }
         } else {
-            self.move_camera(game_data);
-            if game_data.controller.was_key_pressed(Key::Left) {
+            self.move_camera(state);
+            if state.controller.was_key_pressed(Key::Left) {
                 self.level.theme = self.level.theme.prev();
-            } else if game_data.controller.was_key_pressed(Key::Right) {
+            } else if state.controller.was_key_pressed(Key::Right) {
                 self.level.theme = self.level.theme.next();
             }
+
+            self.swap_selection(state);
         }
         false
     }
 
-    pub fn draw(&self, renderer: &mut Renderer, data: &mut SharedGameData) {
+    pub fn draw(&self, renderer: &mut Renderer, state: &mut SharedState) {
         self.level.draw(
             renderer,
             &self.camera,
-            &mut data.resources,
-            data.frame,
+            &mut state.resources,
+            state.frame,
         );
+
         if self.paused {
             renderer.fill(Color::RGBA(0, 0, 0, 128));
             self.menu.draw(
                 renderer,
                 &Camera::default(),
-                &mut data.resources,
-                data.frame,
+                &mut state.resources,
+                state.frame,
             );
         } else {
             draw_grid(renderer, &self.camera);
+            if let Some(selection) = self.selected {
+                let pos = state.controller.mouse().pos();
+                let block = DrawableBlock {
+                    block: &selection,
+                    pos,
+                    theme: self.level.theme,
+                };
+                block.draw(
+                    renderer,
+                    &Camera::default(),
+                    &mut state.resources,
+                    state.frame,
+                );
+            }
         }
     }
 }
