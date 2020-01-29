@@ -277,6 +277,17 @@ impl Camera {
         (coords.0 - self.x, coords.1 - self.y)
     }
 
+    pub fn to_real_coords(&self, cam_coords: (i32, i32)) -> (i32, i32) {
+        (cam_coords.0 + self.x, cam_coords.1 + self.y)
+    }
+
+    pub fn on_screen(&self, (x, y): (i32, i32)) -> bool {
+        x >= 0
+            && x <= SCREEN_WIDTH as i32
+            && y >= 0
+            && y <= SCREEN_HEIGHT as i32
+    }
+
     pub fn in_view(&self, rect: Rect) -> bool {
         let cam_rect = Rect::new(
             self.x - 1,

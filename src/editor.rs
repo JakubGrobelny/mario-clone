@@ -105,14 +105,43 @@ impl Editor {
                 },
                 ButtonEffect::Resume => {
                     self.paused = false;
+                    state.controller.clear_mouse();
                 },
                 ButtonEffect::Save => {
                     state.resources.save_level(&self.level_name, &self.level);
                     self.paused = false;
+                    state.controller.clear_mouse();
                 },
             }
         }
         ActivityResult::Active
+    }
+
+    fn cursor_block(&self, state: &SharedState) -> Option<(usize, usize)> {
+        let mouse_pos = state.controller.mouse().pos();
+        if !self.camera.on_screen(mouse_pos) {
+            return None;
+        }
+
+        let (x,y) = self.camera.to_real_coords(mouse_pos);
+        let block_x = (x / BLOCK_SIZE as i32) as usize;
+        let block_y = (y / BLOCK_SIZE as i32) as usize;
+        Some((block_x, block_y))
+    }
+
+    fn modify_level(&mut self, state: &mut SharedState) {
+        if state.controller.mouse().is_left_button_active() {
+            if let Some((x,y)) = self.cursor_block(state) {
+                self.level.set_block((x, y), self.selected.unwrap());
+            }
+        }
+        
+        if state.controller.mouse().is_right_button_active() {
+            if let Some((x,y)) = self.cursor_block(state) {
+                self.level.set_block((x,y), Block::default());
+            }
+        }
+
     }
 
     pub fn update(&mut self, state: &mut SharedState) -> ActivityResult {
@@ -131,6 +160,8 @@ impl Editor {
             }
 
             self.swap_selection(state);
+            self.modify_level(state);
+            
             ActivityResult::Active
         }
     }

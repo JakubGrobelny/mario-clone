@@ -109,6 +109,10 @@ impl Level {
             theme: LevelTheme::Day,
         }
     }
+
+    pub fn set_block(&mut self, (x,y): (usize, usize), block: Block) {
+        self.blocks[y][x] = block;
+    }
 }
 
 impl From<LevelTheme> for Color {

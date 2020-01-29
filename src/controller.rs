@@ -181,6 +181,11 @@ impl Controller {
     pub fn was_key_pressed(&self, key: Key) -> bool {
         self.keys[key as usize] == ButtonState::Pressed
     }
+
+    pub fn clear_mouse(&mut self) {
+        self.mouse.right_button = ButtonState::Inactive;
+        self.mouse.left_button = ButtonState::Inactive;
+    }
 }
 
 impl Default for Mouse {
