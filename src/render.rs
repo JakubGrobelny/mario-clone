@@ -19,7 +19,7 @@ pub const SCREEN_WIDTH: u32 = 1280;
 pub const SCREEN_HEIGHT: u32 = 720;
 
 pub struct Renderer {
-    pub canvas: Canvas,
+    pub canvas:          Canvas,
     pub texture_creator: TextureCreator<WindowContext>,
 }
 
@@ -31,7 +31,7 @@ pub struct Camera {
 
 pub struct AnimationFrame<'a> {
     pub texture: Rc<Texture<'a>>,
-    pub region: Rect,
+    pub region:  Rect,
 }
 
 pub enum TextAlignment {
@@ -42,19 +42,19 @@ pub enum TextAlignment {
 }
 
 pub struct PositionedText<'a> {
-    text: &'a str,
-    position: (i32, i32),
+    text:      &'a str,
+    position:  (i32, i32),
     alignment: TextAlignment,
-    scale: f64,
-    color: Color,
+    scale:     f64,
+    color:     Color,
 }
 
 pub struct TextBuilder<'a> {
-    text: &'a str,
-    position: Option<(i32, i32)>,
+    text:      &'a str,
+    position:  Option<(i32, i32)>,
     alignment: Option<TextAlignment>,
-    scale: Option<f64>,
-    color: Option<Color>,
+    scale:     Option<f64>,
+    color:     Option<Color>,
 }
 
 pub trait Drawable {

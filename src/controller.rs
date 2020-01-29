@@ -18,16 +18,16 @@ pub enum ButtonState {
 
 #[derive(Debug)]
 pub struct Mouse {
-    pos: (i32, i32),
-    left_button: ButtonState,
+    pos:          (i32, i32),
+    left_button:  ButtonState,
     right_button: ButtonState,
-    scroll: i32,
+    scroll:       i32,
 }
 
 #[derive(Debug)]
 pub struct Controller {
     mouse: Mouse,
-    keys: [ButtonState; KEY_NUM],
+    keys:  [ButtonState; KEY_NUM],
 }
 
 #[repr(usize)]
@@ -119,7 +119,7 @@ impl Controller {
     pub fn new() -> Controller {
         Controller {
             mouse: Mouse::new(),
-            keys: [ButtonState::Inactive; KEY_NUM],
+            keys:  [ButtonState::Inactive; KEY_NUM],
         }
     }
 
@@ -140,30 +140,30 @@ impl Controller {
                 } => {
                     let index = Key::from(*code) as usize;
                     self.keys[index].update_with_event(KeyEventType::Down);
-                }
+                },
                 Event::KeyUp {
                     keycode: Some(code),
                     ..
                 } => {
                     let index = Key::from(*code) as usize;
                     self.keys[index].update_with_event(KeyEventType::Up);
-                }
+                },
                 Event::MouseMotion { x, y, .. } => {
                     self.mouse.update_position(*x, *y);
-                }
+                },
                 Event::MouseButtonDown { mouse_btn, .. } => {
                     self.mouse.update_button_with_event(
                         *mouse_btn,
                         KeyEventType::Down,
                     );
-                }
+                },
                 Event::MouseButtonUp { mouse_btn, .. } => {
                     self.mouse
                         .update_button_with_event(*mouse_btn, KeyEventType::Up);
-                }
+                },
                 Event::MouseWheel { y, .. } => {
                     self.mouse.scroll = *y;
-                }
+                },
                 _ => (),
             }
         }
@@ -191,10 +191,10 @@ impl Default for Mouse {
 impl Mouse {
     pub fn new() -> Mouse {
         Mouse {
-            pos: (0, 0),
-            left_button: ButtonState::Inactive,
+            pos:          (0, 0),
+            left_button:  ButtonState::Inactive,
             right_button: ButtonState::Inactive,
-            scroll: 0,
+            scroll:       0,
         }
     }
 
@@ -234,10 +234,10 @@ impl Mouse {
         match button {
             MouseButton::Left => {
                 self.left_button.update_with_event(event);
-            }
+            },
             MouseButton::Right => {
                 self.right_button.update_with_event(event);
-            }
+            },
             _ => (),
         }
     }

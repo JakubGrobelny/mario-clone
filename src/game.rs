@@ -16,7 +16,7 @@ pub struct Game {
     player: Player,
     // paused: bool,
     camera: Camera,
-    score: Score,
+    score:  Score,
 }
 
 impl Score {

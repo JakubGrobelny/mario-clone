@@ -12,8 +12,8 @@ use vector2d::Vector2D;
 #[derive(Debug)]
 pub struct Player {
     position: (i32, i32),
-    physics: Physics,
-    hitbox: Hitbox,
+    physics:  Physics,
+    hitbox:   Hitbox,
 }
 
 const PLAYER_MASS: f64 = 1.0;
@@ -24,8 +24,8 @@ impl Player {
     pub fn new(x: i32, y: i32) -> Player {
         Player {
             position: (x, y),
-            physics: Physics::new(PLAYER_MASS),
-            hitbox: Hitbox::new(x, y, PLAYER_WIDTH, PLAYER_HEIGHT),
+            physics:  Physics::new(PLAYER_MASS),
+            hitbox:   Hitbox::new(x, y, PLAYER_WIDTH, PLAYER_HEIGHT),
         }
     }
 

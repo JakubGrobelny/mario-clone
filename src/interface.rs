@@ -11,8 +11,8 @@ pub const BUTTON_HEIGHT: u32 = 90;
 pub const BUTTON_DISTANCE: u32 = 20;
 
 pub struct Button<Effect> {
-    text: String,
-    rect: Rect,
+    text:       String,
+    rect:       Rect,
     pub effect: Effect,
 }
 
@@ -24,11 +24,11 @@ pub struct ButtonColumn<T> {
 }
 
 pub struct ButtonColumnBuilder<'a, T> {
-    buttons: ButtonColumnInfo<'a, T>,
-    width: u32,
-    height: u32,
+    buttons:    ButtonColumnInfo<'a, T>,
+    width:      u32,
+    height:     u32,
     separation: u32,
-    shift: (i32, i32),
+    shift:      (i32, i32),
 }
 
 impl<T> ButtonColumn<T> {
@@ -52,11 +52,11 @@ impl<T> ButtonColumn<T> {
 impl<'a, T> ButtonColumnBuilder<'a, T> {
     pub fn new() -> Self {
         ButtonColumnBuilder {
-            buttons: vec![],
-            width: BUTTON_WIDTH,
-            height: BUTTON_HEIGHT,
+            buttons:    vec![],
+            width:      BUTTON_WIDTH,
+            height:     BUTTON_HEIGHT,
             separation: BUTTON_DISTANCE,
-            shift: (0, 0),
+            shift:      (0, 0),
         }
     }
 
@@ -71,7 +71,7 @@ impl<'a, T> ButtonColumnBuilder<'a, T> {
     }
 
     pub fn height(mut self, height: u32) -> Self {
-        self.height = height;   
+        self.height = height;
         self
     }
 

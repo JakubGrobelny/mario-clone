@@ -12,13 +12,13 @@ pub const LEVEL_WIDTH: usize = 220;
 #[derive(Clone)]
 pub struct Level {
     pub theme: LevelTheme,
-    blocks: Box<[[BlockType; LEVEL_WIDTH]; LEVEL_HEIGHT]>,
+    blocks:    Box<[[Block; LEVEL_WIDTH]; LEVEL_HEIGHT]>,
 }
 
 #[derive(Deserialize, Serialize)]
 pub struct LevelJSON {
-    theme: LevelTheme,
-    blocks: Vec<BlockType>,
+    theme:  LevelTheme,
+    blocks: Vec<Block>,
 }
 
 #[derive(Deserialize, Serialize, Copy, Clone)]
@@ -31,7 +31,7 @@ pub enum LevelTheme {
 
 impl From<&Level> for LevelJSON {
     fn from(lvl: &Level) -> LevelJSON {
-        let blocks: Vec<BlockType> = lvl
+        let blocks: Vec<Block> = lvl
             .blocks
             .iter()
             .map(|row| row.iter())
@@ -78,7 +78,7 @@ impl From<LevelJSON> for Level {
         }
 
         let mut blocks =
-            Box::new([[BlockType::default(); LEVEL_WIDTH]; LEVEL_HEIGHT]);
+            Box::new([[Block::default(); LEVEL_WIDTH]; LEVEL_HEIGHT]);
 
         for (i, block) in json.blocks.into_iter().enumerate() {
             let row = i / LEVEL_WIDTH;
@@ -96,11 +96,11 @@ impl From<LevelJSON> for Level {
 impl Level {
     pub fn new() -> Level {
         let mut blocks =
-            Box::new([[BlockType::default(); LEVEL_WIDTH]; LEVEL_HEIGHT]);
+            Box::new([[Block::default(); LEVEL_WIDTH]; LEVEL_HEIGHT]);
         const GROUND_HEIGHT: usize = 3;
         for col in 0..LEVEL_WIDTH {
             for row in LEVEL_HEIGHT - GROUND_HEIGHT..LEVEL_HEIGHT {
-                blocks[row][col] = BlockType::Rock;
+                blocks[row][col] = Block::from(BlockType::Rock);
             }
         }
 
@@ -115,7 +115,7 @@ impl From<LevelTheme> for Color {
     fn from(theme: LevelTheme) -> Color {
         match theme {
             LevelTheme::Day => Color::RGB(88, 100, 255),
-            LevelTheme::Night => Color::RGB(0,0,0),
+            LevelTheme::Night => Color::RGB(0, 0, 0),
             LevelTheme::Underground => Color::RGB(0, 0, 0),
         }
     }
@@ -138,14 +138,14 @@ impl Drawable for Level {
                 let x = x as i32 * BLOCK_SIZE as i32;
                 let y = y as i32 * BLOCK_SIZE as i32;
 
-                if !cam.in_view(rect!(x, y, BLOCK_SIZE, BLOCK_SIZE)) {
-                    continue;
-                }
+                let visible = block.is_visible();
+                let in_view = cam.in_view(rect!(x, y, BLOCK_SIZE, BLOCK_SIZE));
 
-                if let Some(frame) =
-                    block.get_animation_frame(res, self.theme, tick)
-                {
-                    frame.draw(renderer, cam, (x, y))
+                if visible && in_view {
+                    let frame = block.animation_frame(res, self.theme, tick);
+                    if let Some(frame) = frame {
+                        frame.draw(renderer, cam, (x, y))
+                    }
                 }
             }
         }

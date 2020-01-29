@@ -20,7 +20,7 @@ pub type TextureCache<'a, T> =
 
 pub struct ResourceManager<'a> {
     res_path: PathBuf,
-    font: Font<'a, 'static>,
+    font:     Font<'a, 'static>,
     textures: TextureCache<'a, WindowContext>,
 }
 
@@ -30,7 +30,7 @@ where
     Loader: 'a + ResourceLoader<'a, Resource>,
 {
     loader: &'a Loader,
-    cache: HashMap<Key, Rc<Resource>>,
+    cache:  HashMap<Key, Rc<Resource>>,
 }
 
 pub trait ResourceLoader<'a, Resource> {
@@ -69,6 +69,7 @@ where
 
 impl<'a, T> ResourceLoader<'a, Texture<'a>> for TextureCreator<T> {
     type Args = str;
+
     fn load(&'a self, path: &str) -> Result<Texture> {
         let texture = self.load_texture(path)?;
         Ok(texture)

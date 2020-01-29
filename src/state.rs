@@ -14,17 +14,17 @@ use sdl2::{event::Event, EventPump};
 use std::mem::replace;
 
 pub struct GameState<'a> {
-    activity: Activity,
+    activity:   Activity,
     event_pump: EventPump,
-    data: SharedGameData<'a>,
+    data:       SharedGameData<'a>,
 }
 
 pub struct SharedGameData<'a> {
     pub should_exit: bool,
-    pub controller: Controller,
-    pub resources: ResourceManager<'a>,
-    pub text_input: TextInput<'a>,
-    pub frame: u32,
+    pub controller:  Controller,
+    pub resources:   ResourceManager<'a>,
+    pub text_input:  TextInput<'a>,
+    pub frame:       u32,
 }
 
 pub struct TextInput<'a> {
@@ -163,10 +163,10 @@ impl GameState<'_> {
                 Event::Quit { .. } => {
                     self.data.should_exit = true;
                     break;
-                }
+                },
                 Event::TextInput { text, .. } => {
                     self.data.text_input.input(text);
-                }
+                },
                 Event::KeyDown {
                     keycode: Some(Keycode::Backspace),
                     ..
@@ -174,7 +174,7 @@ impl GameState<'_> {
                     if self.data.text_input.is_active() {
                         self.data.text_input.backspace();
                     }
-                }
+                },
                 _ => (),
             }
         }
@@ -184,7 +184,7 @@ impl GameState<'_> {
         match &mut self.activity {
             Activity::Game(game) => {
                 game.update(&mut self.data);
-            }
+            },
             activity @ Activity::FileInputScreen => {
                 let reading_text = self.data.text_input.is_active();
                 if !reading_text {
@@ -202,7 +202,7 @@ impl GameState<'_> {
                         Activity::new_main_menu(&self.data.resources),
                     );
                 }
-            }
+            },
             Activity::Editor(editor) => {
                 if editor.update(&mut self.data) {
                     replace(
@@ -210,13 +210,13 @@ impl GameState<'_> {
                         Activity::new_main_menu(&self.data.resources),
                     );
                 }
-            }
+            },
             Activity::MainMenu(menu) => {
                 let activity = menu.update_and_get_activity(&mut self.data);
                 if let Some(activity) = activity {
                     replace(&mut self.activity, activity);
                 }
-            }
+            },
         }
     }
 
@@ -224,13 +224,13 @@ impl GameState<'_> {
         match &self.activity {
             Activity::Game(game) => {
                 game.draw(renderer, &mut self.data);
-            }
+            },
             Activity::Editor(editor) => {
                 editor.draw(renderer, &mut self.data);
-            }
+            },
             Activity::MainMenu(menu) => {
                 menu.draw(renderer, &mut self.data);
-            }
+            },
             Activity::FileInputScreen => {
                 renderer.clear(Color::RGB(0, 0, 0));
                 let prompt =
@@ -259,7 +259,7 @@ impl GameState<'_> {
                     &mut self.data.resources,
                     self.data.frame,
                 );
-            }
+            },
         }
 
         renderer.canvas.present();

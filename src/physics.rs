@@ -3,7 +3,7 @@ use vector2d::Vector2D;
 
 #[derive(Debug)]
 pub struct Physics {
-    mass: f64,
+    mass:  f64,
     speed: Vector2D<f64>,
 }
 

@@ -9,12 +9,12 @@ use crate::state::*;
 use sdl2::pixels::Color;
 
 pub struct Editor {
-    camera: Camera,
-    level: Level,
+    camera:     Camera,
+    level:      Level,
     level_name: String,
-    paused: bool,
-    menu: ButtonColumn<ButtonEffect>,
-    selected: BlockType,
+    paused:     bool,
+    menu:       ButtonColumn<ButtonEffect>,
+    selected:   BlockType,
 }
 
 enum ButtonEffect {
@@ -80,16 +80,16 @@ impl Editor {
                 match effect {
                     ButtonEffect::Menu => {
                         return true;
-                    }
+                    },
                     ButtonEffect::Resume => {
                         self.paused = false;
-                    }
+                    },
                     ButtonEffect::Save => {
                         game_data
                             .resources
                             .save_level(&self.level_name, &self.level);
                         self.paused = false;
-                    }
+                    },
                 }
             }
         } else {
