@@ -97,11 +97,21 @@ impl Level {
     pub fn new() -> Level {
         let mut blocks =
             Box::new([[Block::default(); LEVEL_WIDTH]; LEVEL_HEIGHT]);
-        const GROUND_HEIGHT: usize = 3;
-        for col in 0..LEVEL_WIDTH {
-            for row in LEVEL_HEIGHT - GROUND_HEIGHT..LEVEL_HEIGHT {
-                blocks[row][col] = Block::from(BlockType::Rock);
-            }
+
+        blocks[LEVEL_HEIGHT - 2][0] = Block::from(BlockType::GroundLeft);
+        blocks[LEVEL_HEIGHT - 2][LEVEL_WIDTH - 1] =
+            Block::from(BlockType::GroundRight);
+        for col in 1..LEVEL_WIDTH - 1 {
+            blocks[LEVEL_HEIGHT - 2][col] =
+                Block::from(BlockType::GroundMiddle);
+        }
+
+        blocks[LEVEL_HEIGHT - 1][0] = Block::from(BlockType::GroundBottomLeft);
+        blocks[LEVEL_HEIGHT - 1][LEVEL_WIDTH - 1] =
+            Block::from(BlockType::GroundBottomRight);
+        for col in 1..LEVEL_WIDTH - 1 {
+            blocks[LEVEL_HEIGHT - 1][col] =
+                Block::from(BlockType::GroundBottomMiddle);
         }
 
         Level {
@@ -110,7 +120,7 @@ impl Level {
         }
     }
 
-    pub fn set_block(&mut self, (x,y): (usize, usize), block: Block) {
+    pub fn set_block(&mut self, (x, y): (usize, usize), block: Block) {
         self.blocks[y][x] = block;
     }
 }

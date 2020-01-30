@@ -12,16 +12,44 @@ use sdl2::video::WindowContext;
 
 use serde::{Deserialize, Serialize};
 
+use crate::block::*;
 use crate::level::*;
 use crate::utility::*;
+
+pub struct ResourceManager<'a> {
+    res_path:     PathBuf,
+    font:         Font<'a, 'static>,
+    textures:     TextureCache<'a, WindowContext>,
+    texture_info: TexturePaths,
+}
 
 pub type TextureCache<'a, T> =
     ResourceCache<'a, String, Texture<'a>, TextureCreator<T>>;
 
-pub struct ResourceManager<'a> {
-    res_path: PathBuf,
-    font:     Font<'a, 'static>,
-    textures: TextureCache<'a, WindowContext>,
+#[derive(Deserialize)]
+#[derive(Clone)]
+pub struct TextureInfo {
+    pub path:      String,
+    #[serde(default = "default_width")]
+    pub width:     u32,
+    #[serde(default = "default_height")]
+    pub height:    u32,
+    #[serde(default = "default_animation")]
+    pub animation: TextureAnimation,
+    #[serde(default = "default_themed")]
+    pub themed:    bool,
+}
+
+#[derive(Deserialize)]
+#[derive(Clone)]
+pub struct TextureAnimation {
+    frames: u32,
+    speed:  u32,
+}
+
+#[derive(Deserialize)]
+pub struct TexturePaths {
+    block_textures: HashMap<BlockType, TextureInfo>,
 }
 
 pub struct ResourceCache<'a, Key, Resource, Loader>
@@ -87,15 +115,33 @@ impl ResourceManager<'_> {
         let mut font = ttf.load_font(font_path, 128)?;
         font.set_style(sdl2::ttf::FontStyle::NORMAL);
 
+        let texture_info =
+            fs::read_to_string(res_path.join("textures/paths.json"))
+                .map(|info_str| serde_json::from_str(&info_str))??;
+
         Ok(ResourceManager {
             res_path,
             font,
             textures: cache,
+            texture_info,
         })
     }
 
     pub fn font(&self) -> &Font {
         &self.font
+    }
+
+    pub fn block_texture_info(&self, block: Block) -> TextureInfo {
+        self.texture_info
+            .block_textures
+            .get(&block.kind())
+            .or_else(|| {
+                panic_with_messagebox!(
+                    "Failed to find texture info for {:?}",
+                    block.kind()
+                )
+            })
+            .unwrap().clone()
     }
 
     pub fn texture(&mut self, name: &str) -> Rc<Texture> {
@@ -170,5 +216,42 @@ impl ResourceManager<'_> {
                 (name, level)
             })
             .collect()
+    }
+}
+
+impl TextureInfo {
+    pub fn frame_index(&self, tick: u32) -> u32 {
+        let frames = self.animation.frames;
+        let speed = self.animation.speed;
+        Frequency::new(frames, speed).phase(tick)
+    }
+
+    pub fn variant_index(&self, theme: LevelTheme) -> u32 {
+        if self.themed {
+            theme as u32
+        } else {
+            0
+        }
+    }
+}
+
+
+// for serde_json default values purposes
+fn default_themed() -> bool {
+    true
+}
+
+fn default_height() -> u32 {
+    BLOCK_SIZE
+}
+
+fn default_width() -> u32 {
+    BLOCK_SIZE
+}
+
+fn default_animation() -> TextureAnimation {
+    TextureAnimation {
+        frames: 1,
+        speed: 1,
     }
 }

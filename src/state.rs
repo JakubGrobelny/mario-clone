@@ -108,7 +108,6 @@ impl SharedState<'_> {
         resources: ResourceManager<'a>,
         text_input: TextInput<'a>,
     ) -> SharedState<'a> {
-        dbg!(text_input.is_active());
         SharedState {
             should_exit: false,
             controller: Controller::new(),

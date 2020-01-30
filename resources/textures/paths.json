@@ -1,0 +1,55 @@
+{
+    "block_textures": {
+        "Bricks": {
+            "path": "brick"
+        },
+        "Rock": {
+            "path": "rock"
+        },
+        "QuestionMark": {
+            "path": "question_mark/full",
+            "themed": false,
+            "animation": {
+                "frames": 4,
+                "speed": 2
+            }
+        },
+        "RockLeft": {
+            "path": "rock/left"
+        },
+        "RockRight": {
+            "path": "rock/right"
+        },
+        "RockMiddle": {
+            "path": "rock/middle"
+        },
+        "Ground": {
+            "path": "ground"
+        },
+        "GroundLeft": {
+            "path": "ground/left"
+        },
+        "GroundRight": {
+            "path": "ground/right"
+        },
+        "GroundMiddle": {
+            "path": "ground/middle"
+        },
+        "GroundBottom": {
+            "path": "ground/bottom"
+        },
+        "GroundBottomLeft": {
+            "path": "ground/bottom/left"
+        },
+        "GroundBottomRight": {
+            "path": "ground/bottom/right"
+        },
+        "GroundBottomMiddle": {
+            "path": "ground/bottom/middle"
+        },
+        "QuestionMarkEmpty": {
+            "path": "question_mark/empty",
+            "themed": false
+        }
+    }
+}

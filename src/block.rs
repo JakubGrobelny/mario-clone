@@ -13,17 +13,28 @@ pub const BLOCK_SIZE: u32 = 64;
 pub struct Block {
     kind:     BlockType,
     contents: Option<BlockContents>,
-    hidden:   bool,
 }
 
 #[derive(Copy, Clone)]
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Hash)]
 #[derive(PartialEq, Eq)]
 #[derive(FromPrimitive, Debug)]
 #[repr(u8)]
 pub enum BlockType {
     Bricks = 0,
     Rock,
+    RockLeft,
+    RockMiddle,
+    RockRight,
+    Ground,
+    GroundLeft,
+    GroundMiddle,
+    GroundRight,
+    GroundBottom,
+    GroundBottomLeft,
+    GroundBottomMiddle,
+    GroundBottomRight,
+    QuestionMarkEmpty,
     QuestionMark,
     Air,
 }
@@ -40,7 +51,6 @@ impl From<BlockType> for Block {
         Block {
             kind:     block_type,
             contents: None,
-            hidden:   false,
         }
     }
 }
@@ -52,32 +62,34 @@ impl Default for Block {
 }
 
 impl Block {
-    pub fn new(kind: BlockType, hidden: bool, contents: BlockContents) -> Self {
+    pub fn new(kind: BlockType, contents: BlockContents) -> Self {
         Block {
             kind,
-            hidden,
             contents: Some(contents),
         }
     }
 
-    pub fn new_empty(kind: BlockType, hidden: bool) -> Self {
+    pub fn new_empty(kind: BlockType) -> Self {
         Block {
             kind,
-            hidden,
             contents: None,
         }
     }
 
-    pub fn next_kind(&self) -> Block {
+    pub fn kind(&self) -> BlockType {
+        self.kind
+    }
+
+    pub fn next_kind(self) -> Block {
         Block::from(self.kind.next())
     }
 
-    pub fn prev_kind(&self) -> Block {
+    pub fn prev_kind(self) -> Block {
         Block::from(self.kind.prev())
     }
 
-    pub fn is_visible(&self) -> bool {
-        !self.hidden && self.kind.is_visible()
+    pub fn is_visible(self) -> bool {
+        self.kind.is_visible()
     }
 }
 
@@ -105,68 +117,39 @@ impl BlockType {
         FromPrimitive::from_u8(prev_id).unwrap()
     }
 
-    fn texture_name(self) -> Option<&'static str> {
-        match self {
-            BlockType::Air => None,
-            BlockType::Bricks => Some("brick"),
-            BlockType::Rock => Some("rock"),
-            BlockType::QuestionMark => Some("question_mark"),
-        }
-    }
-
     fn is_visible(self) -> bool {
         self != BlockType::Air
-    }
-
-    fn has_themes(self) -> bool {
-        match self {
-            BlockType::Bricks | BlockType::Rock => true,
-            _ => false,
-        }
-    }
-
-    fn frame_index(self, tick: u32) -> u32 {
-        match self {
-            BlockType::QuestionMark => Frequency::new(2, 2).phase(tick),
-            _ => 0,
-        }
-    }
-
-    fn variant_index(self, theme: LevelTheme) -> u32 {
-        if self.has_themes() {
-            theme as u32
-        } else {
-            0
-        }
     }
 }
 
 impl<'a> Drawable for ThemedBlock<'a> {
     fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
         let block = data.object.block;
-        let (x, y) = data.position;
-        let size = (BLOCK_SIZE as f64 * data.scale) as u32;
 
-        let visible = block.is_visible();
-        let in_view = data.camera.in_view(rect!(x, y, size, size));
-
-        if !visible || !in_view {
+        if !block.is_visible() {
             return;
         }
 
-        let kind = block.kind;
+        let info = res.block_texture_info(*block);
+
+        let (x, y) = data.position;
+        let width = (info.width as f64 * data.scale) as u32;
+        let height = (info.height as f64 * data.scale) as u32;
+
+        if !data.camera.in_view(rect!(x, y, width, height)) {
+            return;
+        }
+
         let theme = data.object.theme;
 
-        let sprite_x = (kind.frame_index(data.tick) * BLOCK_SIZE) as i32;
-        let sprite_y = (kind.variant_index(theme) * BLOCK_SIZE) as i32;
-        let texture_name = kind
-            .texture_name()
-            .expect("Visible block has no associated texture name!");
-        let texture = res.texture(texture_name);
-        let src_region = rect!(sprite_x, sprite_y, BLOCK_SIZE, BLOCK_SIZE);
+        let sprite_x = (info.frame_index(data.tick) * info.width) as i32;
+        let sprite_y = (info.variant_index(theme) * info.height) as i32;
 
+        let texture = res.texture(&info.path);
+
+        let src_region = rect!(sprite_x, sprite_y, info.width, info.height);
         let (cam_x, cam_y) = data.camera.translate_coords((x, y));
-        let dest = rect!(cam_x, cam_y, size, size);
+        let dest = rect!(cam_x, cam_y, width, height);
 
         data.renderer
             .canvas
