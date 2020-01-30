@@ -4,12 +4,10 @@ use crate::resource::*;
 
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
-use sdl2::render::{Texture, TextureCreator, TextureQuery};
+use sdl2::render::{TextureCreator, TextureQuery};
 use sdl2::video::WindowContext;
 
-use std::convert::TryInto;
 use std::fmt::Debug;
-use std::rc::Rc;
 
 type Canvas = sdl2::render::Canvas<sdl2::video::Window>;
 
@@ -62,7 +60,7 @@ pub trait Drawable: Sized {
 }
 
 impl Drawable for Rect {
-    fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
+    fn show(data: DrawCall<Self>, _res: &mut ResourceManager) {
         let (shift_x, shift_y) = data.position;
         let width = (data.object.width() as f64 * data.scale) as f64;
         let height = (data.object.height() as f64 * data.scale) as f64;
@@ -76,7 +74,10 @@ impl Drawable for Rect {
         data.camera.move_rect(&mut rect);
 
         data.renderer.canvas.set_draw_color(Color::RGB(255, 0, 0));
-        data.renderer.canvas.fill_rect(rect);
+        data.renderer
+            .canvas
+            .fill_rect(rect)
+            .expect("Failed to draw a rectangle!");
     }
 }
 
@@ -269,26 +270,26 @@ impl Camera {
         }
     }
 
-    pub fn move_rect(&self, rect: &mut Rect) {
+    pub fn move_rect(self, rect: &mut Rect) {
         rect.offset(-self.x, -self.y);
     }
 
-    pub fn translate_coords(&self, coords: (i32, i32)) -> (i32, i32) {
+    pub fn translate_coords(self, coords: (i32, i32)) -> (i32, i32) {
         (coords.0 - self.x, coords.1 - self.y)
     }
 
-    pub fn to_real_coords(&self, cam_coords: (i32, i32)) -> (i32, i32) {
+    pub fn to_real_coords(self, cam_coords: (i32, i32)) -> (i32, i32) {
         (cam_coords.0 + self.x, cam_coords.1 + self.y)
     }
 
-    pub fn on_screen(&self, (x, y): (i32, i32)) -> bool {
+    pub fn on_screen(self, (x, y): (i32, i32)) -> bool {
         x >= 0
             && x <= SCREEN_WIDTH as i32
             && y >= 0
             && y <= SCREEN_HEIGHT as i32
     }
 
-    pub fn in_view(&self, rect: Rect) -> bool {
+    pub fn in_view(self, rect: Rect) -> bool {
         let cam_rect = Rect::new(
             self.x - 1,
             self.y - 1,
@@ -331,7 +332,7 @@ impl Drawable for Text<'_> {
     }
 }
 
-pub fn draw_grid(renderer: &mut Renderer, camera: &Camera) {
+pub fn draw_grid(renderer: &mut Renderer, camera: Camera) {
     renderer.canvas.set_draw_color(Color::RGB(50, 50, 50));
     let cols = (camera.x + SCREEN_WIDTH as i32) / BLOCK_SIZE as i32;
 

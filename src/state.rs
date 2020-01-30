@@ -53,6 +53,7 @@ impl ActivityResult {
 
 impl TextInput<'_> {
     pub fn new(util: &TextInputUtil) -> TextInput {
+        util.stop();
         TextInput {
             util,
             text: String::new(),
@@ -107,6 +108,7 @@ impl SharedState<'_> {
         resources: ResourceManager<'a>,
         text_input: TextInput<'a>,
     ) -> SharedState<'a> {
+        dbg!(text_input.is_active());
         SharedState {
             should_exit: false,
             controller: Controller::new(),
@@ -150,13 +152,17 @@ impl GameState<'_> {
         self.state.should_exit
     }
 
-    pub fn update(&mut self) {
-        if self.state.frame > 1_024 {
+    pub fn update_tick(&mut self) {
+        const SECONDS_UNTIL_RESET : u32 = 10;
+        if self.state.frame >= FPS * SECONDS_UNTIL_RESET {
             self.state.frame = 0;
         } else {
             self.state.frame += 1;
         }
+    }
 
+    pub fn update(&mut self) {
+        self.update_tick();
         let events: Vec<_> = self.event_pump.poll_iter().collect();
 
         self.state.controller.update(&events);

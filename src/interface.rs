@@ -80,7 +80,7 @@ impl<'a, T> ButtonColumnBuilder<'a, T> {
         self
     }
 
-    pub fn shift(mut self, shift: (i32, i32)) -> Self {
+    pub fn shift(self, shift: (i32, i32)) -> Self {
         self.shift_x(shift.0).shift_y(shift.1)
     }
 
@@ -176,11 +176,7 @@ impl<T> Drawable for Button<T> {
             .color(text_color)
             .build();
 
-        data.renderer
-            .draw(&text)
-            // .pass(&data)
-            .tick(data.tick)
-            .camera(data.camera)
+        pass_draw!(data, &text)
             .position((center.x(), center.y()))
             .scale(0.25)
             .show(res);
@@ -190,14 +186,7 @@ impl<T> Drawable for Button<T> {
 impl<T> Drawable for ButtonColumn<T> {
     fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
         for button in data.object.buttons.iter() {
-            // data.renderer.draw(button).pass(&data).show(res);
-            data.renderer
-                .draw(button)
-                .tick(data.tick)
-                .camera(data.camera)
-                .position(data.position)
-                .scale(data.scale)
-                .show(res);
+            pass_draw!(data, button).show(res);
         }
     }
 }

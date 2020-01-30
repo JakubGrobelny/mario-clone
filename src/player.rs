@@ -5,7 +5,6 @@ use crate::render::*;
 use crate::resource::*;
 
 use sdl2::pixels::Color;
-use sdl2::rect::Rect;
 
 use vector2d::Vector2D;
 

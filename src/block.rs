@@ -1,6 +1,7 @@
 use crate::level::*;
 use crate::render::*;
 use crate::resource::*;
+use crate::utility::*;
 
 use serde::{Deserialize, Serialize};
 
@@ -124,16 +125,9 @@ impl BlockType {
         }
     }
 
-    fn is_animated(self) -> bool {
-        match self {
-            BlockType::QuestionMark => true,
-            _ => false,
-        }
-    }
-
     fn frame_index(self, tick: u32) -> u32 {
         match self {
-            BlockType::QuestionMark => (tick / FPS) % 2,
+            BlockType::QuestionMark => Frequency::new(2, 2).phase(tick),
             _ => 0,
         }
     }
@@ -173,9 +167,6 @@ impl<'a> Drawable for ThemedBlock<'a> {
 
         let (cam_x, cam_y) = data.camera.translate_coords((x, y));
         let dest = rect!(cam_x, cam_y, size, size);
-
-        dbg!(data.position);
-
 
         data.renderer
             .canvas

@@ -1,7 +1,24 @@
+use crate::render::*;
+
 use std::error::Error;
 use std::path::PathBuf;
 
 pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
+
+pub struct Frequency {
+    times: u32,
+    phases: u32,
+}
+
+impl Frequency {
+    pub fn new(phases: u32, times: u32) -> Frequency {
+        Frequency { phases, times }
+    }
+
+    pub fn phase(&self, tick: u32) -> u32 {
+        tick * self.times / FPS % self.phases
+    }
+}
 
 pub fn get_base_path() -> Result<PathBuf> {
     let mut path = std::env::current_exe()?;

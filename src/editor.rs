@@ -180,7 +180,7 @@ impl Editor {
                 .tick(state.frame)
                 .show(&mut state.resources);
         } else {
-            draw_grid(renderer, &self.camera);
+            draw_grid(renderer, self.camera);
             if let Some(selection) = self.selected {
                 let pos = state.controller.mouse().pos();
                 let block = ThemedBlock {
