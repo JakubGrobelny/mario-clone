@@ -14,21 +14,17 @@ pub struct Editor {
     level_name: String,
     paused:     bool,
     menu:       ButtonColumn<ButtonEffect>,
-    selected:   Option<Block>,
-    layer:      EditorLayer,
+    selected:   Selection,
+}
+
+enum Selection {
+    Block(Block),
 }
 
 enum ButtonEffect {
     Menu,
     Save,
     Resume,
-}
-
-enum EditorLayer {
-    Blocks,
-    Background,
-    Collectibles,
-    Enemies,
 }
 
 impl Editor {
@@ -46,8 +42,7 @@ impl Editor {
             level,
             level_name: String::from(name),
             menu: buttons,
-            selected: Some(Block::from(BlockType::Bricks)),
-            layer: EditorLayer::Blocks,
+            selected: Selection::Block(Block::from(BlockType::Bricks)),
         }
     }
 
@@ -83,17 +78,15 @@ impl Editor {
             return;
         }
 
-        if self.selected.is_none() {
-            self.selected = Some(Block::default());
-        }
-
-        let next = if scroll > 0 {
-            self.selected.unwrap().next()
+        self.selected = if scroll > 0 {
+            match self.selected {
+                Selection::Block(block) => Selection::Block(block.next_kind()),
+            }
         } else {
-            self.selected.unwrap().prev()
-        };
-
-        self.selected = next;
+            match self.selected {
+                Selection::Block(block) => Selection::Block(block.prev_kind()),
+            }
+        }
     }
 
     fn update_menu(&mut self, state: &mut SharedState) -> ActivityResult {
@@ -123,25 +116,39 @@ impl Editor {
             return None;
         }
 
-        let (x,y) = self.camera.to_real_coords(mouse_pos);
+        let (x, y) = self.camera.to_real_coords(mouse_pos);
         let block_x = (x / BLOCK_SIZE as i32) as usize;
         let block_y = (y / BLOCK_SIZE as i32) as usize;
         Some((block_x, block_y))
     }
 
+    fn set_selected(&mut self, pos: (usize, usize)) {
+        match self.selected {
+            Selection::Block(block) => {
+                self.level.set_block(pos, block);
+            },
+        }
+    }
+
+    fn free_selected(&mut self, pos: (usize, usize)) {
+        match self.selected {
+            Selection::Block(..) => {
+                self.level.set_block(pos, Block::default());
+            },
+        }
+    }
+
     fn modify_level(&mut self, state: &mut SharedState) {
         if state.controller.mouse().is_left_button_active() {
-            if let Some((x,y)) = self.cursor_block(state) {
-                self.level.set_block((x, y), self.selected.unwrap());
+            if let Some(coords) = self.cursor_block(state) {
+                self.set_selected(coords);
             }
         }
-        
         if state.controller.mouse().is_right_button_active() {
-            if let Some((x,y)) = self.cursor_block(state) {
-                self.level.set_block((x,y), Block::default());
+            if let Some(coords) = self.cursor_block(state) {
+                self.free_selected(coords);
             }
         }
-
     }
 
     pub fn update(&mut self, state: &mut SharedState) -> ActivityResult {
@@ -161,8 +168,26 @@ impl Editor {
 
             self.swap_selection(state);
             self.modify_level(state);
-            
             ActivityResult::Active
+        }
+    }
+
+    fn draw_selected(&self, renderer: &mut Renderer, state: &mut SharedState) {
+        let pos = state.controller.mouse().pos();
+        match self.selected {
+            Selection::Block(block) => {
+                let block = ThemedBlock {
+                    block: &block,
+                    theme: self.level.theme,
+                };
+
+                renderer
+                    .draw(&block)
+                    .position(pos)
+                    .scale(0.75)
+                    .tick(state.frame)
+                    .show(&mut state.resources);
+            },
         }
     }
 
@@ -181,19 +206,7 @@ impl Editor {
                 .show(&mut state.resources);
         } else {
             draw_grid(renderer, self.camera);
-            if let Some(selection) = self.selected {
-                let pos = state.controller.mouse().pos();
-                let block = ThemedBlock {
-                    block: &selection,
-                    theme: self.level.theme,
-                };
-                renderer
-                    .draw(&block)
-                    .position(pos)
-                    .scale(0.75)
-                    .tick(state.frame)
-                    .show(&mut state.resources);
-            }
+            self.draw_selected(renderer, state);
         }
     }
 }

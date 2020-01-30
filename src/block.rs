@@ -68,12 +68,12 @@ impl Block {
         }
     }
 
-    pub fn next(&self) -> Option<Block> {
-        self.kind.next().map(Block::from)
+    pub fn next_kind(&self) -> Block {
+        Block::from(self.kind.next())
     }
 
-    pub fn prev(&self) -> Option<Block> {
-        self.kind.prev().map(Block::from)
+    pub fn prev_kind(&self) -> Block {
+        Block::from(self.kind.prev())
     }
 
     pub fn is_visible(&self) -> bool {
@@ -94,15 +94,15 @@ impl Default for BlockType {
 }
 
 impl BlockType {
-    fn next(self) -> Option<BlockType> {
+    fn next(self) -> BlockType {
         let next_id = (self as u8 + 1) % MAX_BLOCK;
-        FromPrimitive::from_u8(next_id)
+        FromPrimitive::from_u8(next_id).unwrap()
     }
 
-    fn prev(self) -> Option<BlockType> {
+    fn prev(self) -> BlockType {
         let id = self as u8;
         let prev_id = if id == 0 { MAX_BLOCK - 1 } else { id - 1 };
-        FromPrimitive::from_u8(prev_id)
+        FromPrimitive::from_u8(prev_id).unwrap()
     }
 
     fn texture_name(self) -> Option<&'static str> {
