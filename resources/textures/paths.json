@@ -95,6 +95,13 @@
         },
         "TreeLeafsRight": {
             "path": "tree/leafs/right"
+        },
+        "Water": {
+            "path": "water",
+            "animation": {
+                "frames": 3,
+                "speed": 4
+            }
         }
     }
 }

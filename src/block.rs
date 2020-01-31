@@ -51,6 +51,7 @@ pub enum BlockType {
     TreeLeafsLeft,
     TreeLeafsMiddle,
     TreeLeafsRight,
+    Water,
     Air,
 }
 
@@ -91,7 +92,11 @@ impl Block {
         }
     }
 
-    pub fn kind(&self) -> BlockType {
+    pub fn collidable(self) -> bool {
+        self.kind.collidable()
+    }
+
+    pub fn kind(self) -> BlockType {
         self.kind
     }
 
@@ -134,6 +139,16 @@ impl BlockType {
 
     fn is_visible(self) -> bool {
         self != BlockType::Air
+    }
+
+    fn collidable(self) -> bool {
+        match self {
+            BlockType::TreeTrunk
+            | BlockType::TreeTrunkTop
+            | BlockType::Air
+            | BlockType::Water => false,
+            _ => true,
+        }
     }
 }
 
