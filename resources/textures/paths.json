@@ -50,6 +50,51 @@
         "QuestionMarkEmpty": {
             "path": "question_mark/empty",
             "themed": false
+        },
+        "PipeUpperLeft": {
+            "path": "pipe/up/upper/left"
+        },
+        "PipeUpperRight": {
+            "path": "pipe/up/upper/right"
+        },
+        "PipeLowerLeft": {
+            "path": "pipe/up/lower/left"
+        },
+        "PipeLowerRight": {
+            "path": "pipe/up/lower/right"
+        },
+        "PipeSidewaysLeftBottom": {
+            "path": "pipe/sideways/left/lower"
+        },
+        "PipeSidewaysLeftUpper": {
+            "path": "pipe/sideways/left/upper"
+        },
+        "PipeSidewaysRightBottom": {
+            "path": "pipe/sideways/right/lower"
+        },
+        "PipeSidewaysRightUpper": {
+            "path": "pipe/sideways/right/upper"
+        },
+        "PipeJunctionLower": {
+            "path": "pipe/junction/lower"
+        },
+        "PipeJunctionUpper": {
+            "path": "pipe/junction/upper"
+        },
+        "TreeTrunk": {
+            "path": "tree/trunk"
+        },
+        "TreeTrunkTop": {
+            "path": "tree/trunk/top"
+        },
+        "TreeLeafsLeft": {
+            "path": "tree/leafs/left"
+        },
+        "TreeLeafsMiddle": {
+            "path": "tree/leafs/middle"
+        },
+        "TreeLeafsRight": {
+            "path": "tree/leafs/right"
         }
     }
 }
