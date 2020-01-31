@@ -53,9 +53,11 @@ pub struct PartialDrawCall {
 }
 
 #[derive(Copy, Clone)]
+#[derive(PartialEq, Eq)]
 pub enum DrawMode {
     Standard,
     Editor,
+    EditorSelection,
 }
 
 pub struct Text<'a> {

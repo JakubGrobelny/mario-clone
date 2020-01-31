@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use num_traits::FromPrimitive;
 
+use sdl2::pixels::Color;
+
 pub const BLOCK_SIZE: u32 = 64;
 
 #[derive(Copy, Clone, Deserialize, Serialize, PartialEq, Eq, Debug)]
@@ -181,6 +183,19 @@ impl Drawable for ThemedBlock {
             let src_region = rect!(sprite_x, sprite_y, info.width, info.height);
             let (cam_x, cam_y) = data.camera.translate_coords((x, y));
             let dest = rect!(cam_x, cam_y, width, height);
+
+            if data.mode == DrawMode::EditorSelection {
+                let rect = rect!(
+                    x,
+                    y,
+                    info.width,
+                    info.height
+                );
+                data.renderer.canvas.set_draw_color(Color::RGB(255, 0, 0));
+                data.renderer.canvas.draw_rect(rect).expect(
+                    "Failed to draw selection rectangle in the editor!",
+                );
+            }
 
             (src_region, dest, info.path.clone())
         };

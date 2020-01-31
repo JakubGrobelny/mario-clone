@@ -1,3 +1,5 @@
+use crate::block::*;
+use crate::editor::*;
 use crate::level::*;
 use crate::render::*;
 use crate::resource::*;
@@ -5,6 +7,8 @@ use crate::resource::*;
 use serde::{Deserialize, Serialize};
 
 use num_traits::FromPrimitive;
+
+use sdl2::pixels::Color;
 
 #[derive(Copy, Clone)]
 #[derive(Deserialize, Serialize, Hash, FromPrimitive)]
@@ -83,11 +87,23 @@ impl Drawable for ThemedBackgroundElement {
             let (cam_x, cam_y) = data.camera.translate_coords((x, y));
             let dest = rect!(cam_x, cam_y, width, height);
 
+            if data.mode == DrawMode::EditorSelection {
+                let rect = rect!(
+                    x,
+                    y,
+                    info.width,
+                    info.height
+                );
+                data.renderer.canvas.set_draw_color(Color::RGB(255, 0, 0));
+                data.renderer.canvas.draw_rect(rect).expect(
+                    "Failed to draw selection rectangle in the editor!",
+                );
+            }
+
             (src_region, dest, info.path.clone())
         };
 
         let texture = res.texture(&path);
-
         data.renderer
             .canvas
             .copy(&texture, src_region, dest)

@@ -111,16 +111,20 @@ impl Editor {
         ActivityResult::Active
     }
 
+    pub fn coords_to_block((x,y): (i32, i32)) -> (usize, usize) {
+        let block_x = (x / BLOCK_SIZE as i32) as usize;
+        let block_y = (y / BLOCK_SIZE as i32) as usize;
+        (block_x, block_y)
+    }
+
     fn cursor_block(&self, state: &SharedState) -> Option<(usize, usize)> {
         let mouse_pos = state.controller.mouse().pos();
         if !self.camera.on_screen(mouse_pos) {
             return None;
         }
 
-        let (x, y) = self.camera.to_real_coords(mouse_pos);
-        let block_x = (x / BLOCK_SIZE as i32) as usize;
-        let block_y = (y / BLOCK_SIZE as i32) as usize;
-        Some((block_x, block_y))
+        let real_pos = self.camera.to_real_coords(mouse_pos);
+        Some(Editor::coords_to_block(real_pos))
     }
 
     fn set_selected(&mut self, pos: (usize, usize)) {
@@ -203,7 +207,7 @@ impl Editor {
             .position(pos)
             .scale(0.70)
             .tick(state.frame)
-            .mode(DrawMode::Editor);
+            .mode(DrawMode::EditorSelection);
 
         match self.selected {
             Selection::Block(block) => {
