@@ -54,8 +54,8 @@ pub enum BlockType {
     Air,
 }
 
-pub struct ThemedBlock<'a> {
-    pub block: &'a Block,
+pub struct ThemedBlock {
+    pub block: Block,
     pub theme: LevelTheme,
 }
 
@@ -77,6 +77,10 @@ impl Default for Block {
 }
 
 impl Block {
+    pub fn default_visible() -> Self {
+        Self::from(BlockType::Bricks)
+    }
+
     pub fn new(kind: BlockType, contents: BlockContents) -> Self {
         Block {
             kind,
@@ -150,7 +154,7 @@ impl BlockType {
     }
 }
 
-impl<'a> Drawable for ThemedBlock<'a> {
+impl Drawable for ThemedBlock {
     fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
         let block = data.object.block;
 
@@ -159,7 +163,7 @@ impl<'a> Drawable for ThemedBlock<'a> {
         }
 
         let (src_region, dest, path) = {
-            let info = res.block_texture_info(*block);
+            let info = res.block_texture_info(block);
     
             let (x, y) = data.position;
             let width = (info.width as f64 * data.scale) as u32;

@@ -1,3 +1,4 @@
+use crate::background::*;
 use crate::block::*;
 use crate::controller::*;
 use crate::interface::*;
@@ -19,8 +20,10 @@ pub struct Editor {
     selected:   Selection,
 }
 
+#[derive(Clone, Copy)]
 enum Selection {
     Block(Block),
+    Background(BackgroundElement),
 }
 
 enum ButtonEffect {
@@ -44,7 +47,7 @@ impl Editor {
             level,
             level_name: String::from(name),
             menu: buttons,
-            selected: Selection::Block(Block::from(BlockType::Bricks)),
+            selected: Selection::Block(Block::default_visible()),
         }
     }
 
@@ -80,14 +83,10 @@ impl Editor {
             return;
         }
 
-        self.selected = if scroll > 0 {
-            match self.selected {
-                Selection::Block(block) => Selection::Block(block.next_kind()),
-            }
+        if scroll > 0 {
+            self.selected.set_to_next()
         } else {
-            match self.selected {
-                Selection::Block(block) => Selection::Block(block.prev_kind()),
-            }
+            self.selected.set_to_prev()
         }
     }
 
@@ -129,6 +128,9 @@ impl Editor {
             Selection::Block(block) => {
                 self.level.set_block(pos, block);
             },
+            Selection::Background(bg) => {
+                self.level.set_bg(pos, bg);
+            },
         }
     }
 
@@ -137,13 +139,17 @@ impl Editor {
             Selection::Block(..) => {
                 self.level.set_block(pos, Block::default());
             },
+            Selection::Background(..) => {
+                self.level.set_bg(pos, BackgroundElement::default());
+            },
         }
     }
 
     fn copy_pointed(&mut self, pos: (usize, usize)) {
         let pointed = match self.selected {
-            Selection::Block(..) => {
-                Selection::Block(self.level.get_block(pos))
+            Selection::Block(..) => Selection::Block(self.level.get_block(pos)),
+            Selection::Background(..) => {
+                Selection::Background(self.level.get_bg(pos))
             },
         };
 
@@ -179,6 +185,10 @@ impl Editor {
                 self.level.theme = self.level.theme.prev();
             } else if state.controller.was_key_pressed(Key::Right) {
                 self.level.theme = self.level.theme.next();
+            } else if state.controller.was_key_pressed(Key::Up) {
+                self.selected.set_to_next_layer();
+            } else if state.controller.was_key_pressed(Key::Down) {
+                self.selected.set_to_prev_layer();
             }
 
             self.swap_selection(state);
@@ -189,18 +199,26 @@ impl Editor {
 
     fn draw_selected(&self, renderer: &mut Renderer, state: &mut SharedState) {
         let pos = state.controller.mouse().pos();
+        let call = PartialDrawCall::new()
+            .position(pos)
+            .scale(0.70)
+            .tick(state.frame)
+            .mode(DrawMode::Editor);
+
         match self.selected {
             Selection::Block(block) => {
                 let block = ThemedBlock {
-                    block: &block,
+                    block,
                     theme: self.level.theme,
                 };
-
-                renderer
-                    .draw(&block)
-                    .position(pos)
-                    .scale(0.75)
-                    .tick(state.frame)
+                call.draw_with(&block, renderer).show(&mut state.resources);
+            },
+            Selection::Background(background) => {
+                let themed_bg = ThemedBackgroundElement {
+                    element: background,
+                    theme:   self.level.theme,
+                };
+                call.draw_with(&themed_bg, renderer)
                     .show(&mut state.resources);
             },
         }
@@ -209,6 +227,7 @@ impl Editor {
     pub fn draw(&self, renderer: &mut Renderer, state: &mut SharedState) {
         renderer
             .draw(&self.level)
+            .mode(DrawMode::Editor)
             .camera(self.camera)
             .tick(state.frame)
             .show(&mut state.resources);
@@ -222,6 +241,48 @@ impl Editor {
         } else {
             draw_grid(renderer, self.camera);
             self.draw_selected(renderer, state);
+        }
+    }
+}
+
+impl Selection {
+    pub fn set_to_next_layer(&mut self) {
+        let new = match self {
+            Selection::Block(..) => {
+                Selection::Background(BackgroundElement::default_visible())
+            },
+            Selection::Background(..) => {
+                Selection::Block(Block::default_visible())
+            },
+        };
+
+        *self = new
+    }
+
+    pub fn set_to_prev_layer(&mut self) {
+        // TODO: implement once there are more than two layers
+        self.set_to_next_layer();
+    }
+
+    pub fn set_to_next(&mut self) {
+        *self = self.next()
+    }
+
+    pub fn set_to_prev(&mut self) {
+        *self = self.prev()
+    }
+
+    pub fn next(self) -> Self {
+        match self {
+            Selection::Block(block) => Selection::Block(block.next_kind()),
+            Selection::Background(bg) => Selection::Background(bg.next()),
+        }
+    }
+
+    pub fn prev(self) -> Self {
+        match self {
+            Selection::Block(block) => Selection::Block(block.prev_kind()),
+            Selection::Background(bg) => Selection::Background(bg.prev()),
         }
     }
 }

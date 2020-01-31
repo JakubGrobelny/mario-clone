@@ -99,11 +99,51 @@
     },
     "background": {
         "Water": {
-            "path": "water",
+            "path": "background/water",
             "animation": {
                 "frames": 3,
                 "speed": 4
             }
+        },
+        "Fence": {
+            "path": "background/fence"
+        },
+        "TreeTopSmall": {
+            "path": "background/tree/top/small"
+        },
+        "TreeTopBig": {
+            "path": "background/tree/top/big",
+            "height": 128
+        },
+        "TreeBottom": {
+            "path": "background/tree/bottom"
+        },
+        "Castle": {
+            "path": "background/castle",
+            "width": 384,
+            "height": 320
+        },
+        "GrassLeft": {
+            "path": "background/grass/left",
+            "animation": {
+                "frames": 3,
+                "speed": 2
+            }
+        },
+        "GrassRight": {
+            "path": "background/grass/right",
+            "animation": {
+                "frames": 3,
+                "speed": 2
+            }
+        },
+        "GrassMiddle": {
+            "path": "background/grass/middle",
+            "animation": {
+                "frames": 3,
+                "speed": 2
+            }
         }
+
     }
 }

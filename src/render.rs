@@ -41,6 +41,21 @@ pub struct DrawCall<'a, T: Drawable> {
     pub position: (i32, i32),
     pub camera:   Camera,
     pub renderer: &'a mut Renderer,
+    pub mode:     DrawMode,
+}
+
+pub struct PartialDrawCall {
+    pub tick:     u32,
+    pub scale:    f64,
+    pub position: (i32, i32),
+    pub camera:   Camera,
+    pub mode:     DrawMode,
+}
+
+#[derive(Copy, Clone)]
+pub enum DrawMode {
+    Standard,
+    Editor,
 }
 
 pub struct Text<'a> {
@@ -57,6 +72,56 @@ pub struct TextBuilder<'a> {
 
 pub trait Drawable: Sized {
     fn show(data: DrawCall<Self>, res: &mut ResourceManager);
+}
+
+impl PartialDrawCall {
+    pub fn new() -> PartialDrawCall {
+        PartialDrawCall {
+            tick:     0,
+            scale:    1.0,
+            position: (0, 0),
+            camera:   Camera::default(),
+            mode:     DrawMode::Standard,
+        }
+    }
+
+    pub fn draw_with<'a, T: Drawable>(
+        self,
+        obj: &'a T,
+        renderer: &'a mut Renderer,
+    ) -> DrawCall<'a, T> {
+        let call = renderer.draw(obj);
+        call.tick(self.tick)
+            .scale(self.scale)
+            .position(self.position)
+            .camera(self.camera)
+            .mode(self.mode)
+    }
+
+    pub fn tick(mut self, tick: u32) -> Self {
+        self.tick = tick;
+        self
+    }
+
+    pub fn scale(mut self, scale: f64) -> Self {
+        self.scale = scale;
+        self
+    }
+
+    pub fn position(mut self, position: (i32, i32)) -> Self {
+        self.position = position;
+        self
+    }
+
+    pub fn camera(mut self, camera: Camera) -> Self {
+        self.camera = camera;
+        self
+    }
+
+    pub fn mode(mut self, mode: DrawMode) -> Self {
+        self.mode = mode;
+        self
+    }
 }
 
 impl Drawable for Rect {
@@ -168,6 +233,7 @@ impl Renderer {
             tick:     0,
             scale:    1.0,
             position: (0, 0),
+            mode:     DrawMode::Standard,
         }
     }
 }
@@ -182,6 +248,7 @@ macro_rules! pass_draw {
             .position($call.position)
             .scale($call.scale)
             .tick($call.tick)
+            .mode($call.mode)
     };
 }
 
@@ -202,7 +269,7 @@ macro_rules! text {
 }
 
 #[macro_export]
-macro_rules! test_right {
+macro_rules! text_right {
     ($test:expr) => {
         TextBuilder::new($text)
             .alignment(TextAlignment::Right)
@@ -232,6 +299,11 @@ impl<'a, T: Drawable> DrawCall<'a, T> {
 
     pub fn scale(mut self, scale: f64) -> Self {
         self.scale = scale;
+        self
+    }
+
+    pub fn mode(mut self, mode: DrawMode) -> Self {
+        self.mode = mode;
         self
     }
 }

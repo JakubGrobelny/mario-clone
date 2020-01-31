@@ -119,7 +119,18 @@ impl ResourceManager<'_> {
 
         let texture_info =
             fs::read_to_string(res_path.join("textures/info.json"))
-                .map(|info_str| serde_json::from_str(&info_str))??;
+                .map_err(|err| err.to_string())
+                .and_then(|info_str| {
+                    serde_json::from_str(&info_str)
+                        .map_err(|err| err.to_string())
+                })
+                .unwrap_or_else(|err| {
+                    panic_with_messagebox!(
+                        "Failed to load textures info due to an error in the \
+                         JSON file:\n{}",
+                        err
+                    )
+                });
 
         Ok(ResourceManager {
             res_path,
@@ -200,7 +211,14 @@ impl ResourceManager<'_> {
                 serde_json::from_str::<LevelJSON>(&contents)
                     .map_err(|err| err.to_string())
             })
-            .map_err(|err| panic_with_messagebox!("{}", err))
+            .map_err(|err| {
+                panic_with_messagebox!(
+                    "Failed to load level '{}' due to an error in JSON file: \
+                     {}\n",
+                    name,
+                    err
+                )
+            })
             .map(|lvl| lvl.into())
             .ok()
     }
@@ -219,7 +237,13 @@ impl ResourceManager<'_> {
                     serde_json::from_str(&contents)
                         .map_err(|err| err.to_string())
                 })
-                .unwrap_or_else(|err| panic_with_messagebox!("{}", err));
+                .unwrap_or_else(|err| {
+                    panic_with_messagebox!(
+                        "Failed to load listed levels due to an error in JSON \
+                         file:\n {}",
+                        err
+                    )
+                });
 
         level_list
             .levels

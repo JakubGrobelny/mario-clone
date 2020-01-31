@@ -149,6 +149,14 @@ impl Level {
         }
     }
 
+    pub fn get_bg(&mut self, (x, y): (usize, usize)) -> BackgroundElement {
+        self.background[y][x]
+    }
+
+    pub fn set_bg(&mut self, (x, y): (usize, usize), bg: BackgroundElement) {
+        self.background[y][x] = bg;
+    }
+
     pub fn get_block(&mut self, (x, y): (usize, usize)) -> Block {
         self.blocks[y][x]
     }
@@ -175,15 +183,28 @@ impl Drawable for Level {
         data.renderer.canvas.clear();
 
         for (y, row) in data.object.blocks.iter().enumerate() {
-            for (x, block) in row.iter().enumerate() {
+            for (x, &block) in row.iter().enumerate() {
                 let x = x as i32 * BLOCK_SIZE as i32;
                 let y = y as i32 * BLOCK_SIZE as i32;
                 let block = ThemedBlock {
-                    block: &block,
+                    block,
                     theme: data.object.theme,
                 };
 
                 pass_draw!(data, &block).position((x, y)).show(res);
+            }
+        }
+
+        for (y, row) in data.object.background.iter().enumerate() {
+            for (x, &bg) in row.iter().enumerate() {
+                let x = x as i32 * BLOCK_SIZE as i32;
+                let y = y as i32 * BLOCK_SIZE as i32;
+                let themed_bg = ThemedBackgroundElement {
+                    element: bg,
+                    theme: data.object.theme
+                };
+                
+                pass_draw!(data, &themed_bg).position((x,y)).show(res);
             }
         }
     }
