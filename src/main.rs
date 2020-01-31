@@ -8,6 +8,7 @@ extern crate num_derive;
 mod utility;
 #[macro_use]
 mod render;
+mod background;
 mod block;
 mod controller;
 mod editor;

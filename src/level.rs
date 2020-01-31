@@ -1,3 +1,4 @@
+use crate::background::*;
 use crate::block::*;
 use crate::render::*;
 use crate::resource::*;
@@ -9,16 +10,20 @@ use serde::{Deserialize, Serialize};
 pub const LEVEL_HEIGHT: usize = 20;
 pub const LEVEL_WIDTH: usize = 220;
 
+pub type BlockArray<T> = Box<[[T; LEVEL_WIDTH]; LEVEL_HEIGHT]>;
+
 #[derive(Clone)]
 pub struct Level {
-    pub theme: LevelTheme,
-    blocks:    Box<[[Block; LEVEL_WIDTH]; LEVEL_HEIGHT]>,
+    pub theme:  LevelTheme,
+    blocks:     BlockArray<Block>,
+    background: BlockArray<BackgroundElement>,
 }
 
 #[derive(Deserialize, Serialize)]
 pub struct LevelJSON {
-    theme:  LevelTheme,
-    blocks: Vec<Block>,
+    theme:      LevelTheme,
+    blocks:     Vec<Block>,
+    background: Vec<BackgroundElement>,
 }
 
 #[derive(Deserialize, Serialize, Copy, Clone)]
@@ -29,18 +34,20 @@ pub enum LevelTheme {
     Night,
 }
 
+
 impl From<&Level> for LevelJSON {
     fn from(lvl: &Level) -> LevelJSON {
-        let blocks: Vec<Block> = lvl
-            .blocks
-            .iter()
-            .map(|row| row.iter())
-            .flatten()
-            .copied()
-            .collect();
+        fn array_to_vec<T: Copy>(array: &BlockArray<T>) -> Vec<T> {
+            array.iter().map(|row| row.iter()).flatten().copied().collect()
+        }
+        
+        let blocks = array_to_vec(&lvl.blocks);
+        let background = array_to_vec(&lvl.background);
+
         LevelJSON {
             theme: lvl.theme,
             blocks,
+            background,
         }
     }
 }
@@ -77,8 +84,7 @@ impl From<LevelJSON> for Level {
             );
         }
 
-        let mut blocks =
-            Box::new([[Block::default(); LEVEL_WIDTH]; LEVEL_HEIGHT]);
+        let mut blocks = Level::default_blocks();
 
         for (i, block) in json.blocks.into_iter().enumerate() {
             let row = i / LEVEL_WIDTH;
@@ -86,24 +92,38 @@ impl From<LevelJSON> for Level {
             blocks[row][col] = block;
         }
 
+        let mut background = Level::default_blocks();
+        for (i, bg_elem) in json.background.into_iter().enumerate() {
+            let row = i / LEVEL_WIDTH;
+            let col = i % LEVEL_WIDTH;
+            background[row][col] = bg_elem;
+        }
+
         Level {
             theme: json.theme,
             blocks,
+            background
         }
     }
 }
 
-impl Level {
-    pub fn new() -> Level {
-        let mut blocks =
-            Box::new([[Block::default(); LEVEL_WIDTH]; LEVEL_HEIGHT]);
 
+impl Level {
+    fn default_blocks<T: Default + Copy>() -> BlockArray<T> {
+        Box::new([[T::default(); LEVEL_WIDTH]; LEVEL_HEIGHT])
+    }
+
+    fn init_blocks() -> BlockArray<Block> {
+        let mut blocks = Level::default_blocks();
+    
         blocks[LEVEL_HEIGHT - 2][0] = Block::from(BlockType::GroundLeft);
         blocks[LEVEL_HEIGHT - 2][LEVEL_WIDTH - 1] =
             Block::from(BlockType::GroundRight);
+
+        let ground = Block::from(BlockType::GroundMiddle);
+
         for col in 1..LEVEL_WIDTH - 1 {
-            blocks[LEVEL_HEIGHT - 2][col] =
-                Block::from(BlockType::GroundMiddle);
+            blocks[LEVEL_HEIGHT - 2][col] = ground;
         }
 
         blocks[LEVEL_HEIGHT - 1][0] = Block::from(BlockType::GroundBottomLeft);
@@ -114,10 +134,23 @@ impl Level {
                 Block::from(BlockType::GroundBottomMiddle);
         }
 
+        blocks
+    }
+
+    pub fn new() -> Level {
+        const DEFAULT_THEME : LevelTheme = LevelTheme::Day;
+        let blocks = Level::init_blocks();
+        let background = Level::default_blocks();
+
         Level {
             blocks,
-            theme: LevelTheme::Day,
+            theme: DEFAULT_THEME,
+            background,
         }
+    }
+
+    pub fn get_block(&mut self, (x, y): (usize, usize)) -> Block {
+        self.blocks[y][x]
     }
 
     pub fn set_block(&mut self, (x, y): (usize, usize), block: Block) {

@@ -18,10 +18,11 @@ pub enum ButtonState {
 
 #[derive(Debug)]
 pub struct Mouse {
-    pos:          (i32, i32),
-    left_button:  ButtonState,
-    right_button: ButtonState,
-    scroll:       i32,
+    pos:           (i32, i32),
+    left_button:   ButtonState,
+    right_button:  ButtonState,
+    middle_button: ButtonState,
+    scroll:        i32,
 }
 
 #[derive(Debug)]
@@ -197,10 +198,11 @@ impl Default for Mouse {
 impl Mouse {
     pub fn new() -> Mouse {
         Mouse {
-            pos:          (0, 0),
-            left_button:  ButtonState::Inactive,
-            right_button: ButtonState::Inactive,
-            scroll:       0,
+            pos:           (0, 0),
+            left_button:   ButtonState::Inactive,
+            right_button:  ButtonState::Inactive,
+            middle_button: ButtonState::Inactive,
+            scroll:        0,
         }
     }
 
@@ -220,12 +222,20 @@ impl Mouse {
         self.right_button == ButtonState::Pressed
     }
 
+    pub fn was_middle_button_pressed(&self) -> bool {
+        self.middle_button == ButtonState::Pressed
+    }
+
     pub fn is_left_button_active(&self) -> bool {
         self.left_button != ButtonState::Inactive
     }
 
     pub fn is_right_button_active(&self) -> bool {
         self.right_button != ButtonState::Inactive
+    }
+
+    pub fn is_middle_button_active(&self) -> bool {
+        self.middle_button != ButtonState::Inactive
     }
 
     pub fn update_position(&mut self, x: i32, y: i32) {
@@ -243,6 +253,9 @@ impl Mouse {
             },
             MouseButton::Right => {
                 self.right_button.update_with_event(event);
+            },
+            MouseButton::Middle => {
+                self.middle_button.update_with_event(event);
             },
             _ => (),
         }

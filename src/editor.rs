@@ -8,6 +8,8 @@ use crate::state::*;
 
 use sdl2::pixels::Color;
 
+use std::mem::replace;
+
 pub struct Editor {
     camera:     Camera,
     level:      Level,
@@ -138,15 +140,28 @@ impl Editor {
         }
     }
 
+    fn copy_pointed(&mut self, pos: (usize, usize)) {
+        let pointed = match self.selected {
+            Selection::Block(..) => {
+                Selection::Block(self.level.get_block(pos))
+            },
+        };
+
+        self.selected = pointed;
+    }
+
     fn modify_level(&mut self, state: &mut SharedState) {
         if state.controller.mouse().is_left_button_active() {
             if let Some(coords) = self.cursor_block(state) {
                 self.set_selected(coords);
             }
-        }
-        if state.controller.mouse().is_right_button_active() {
+        } else if state.controller.mouse().is_right_button_active() {
             if let Some(coords) = self.cursor_block(state) {
                 self.free_selected(coords);
+            }
+        } else if state.controller.mouse().is_middle_button_active() {
+            if let Some(coords) = self.cursor_block(state) {
+                self.copy_pointed(coords);
             }
         }
     }

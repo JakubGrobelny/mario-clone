@@ -1,5 +1,5 @@
 {
-    "block_textures": {
+    "blocks": {
         "Bricks": {
             "path": "brick"
         },
@@ -11,7 +11,7 @@
             "themed": false,
             "animation": {
                 "frames": 4,
-                "speed": 2
+                "speed": 8
             }
         },
         "RockLeft": {
@@ -95,7 +95,9 @@
         },
         "TreeLeafsRight": {
             "path": "tree/leafs/right"
-        },
+        }
+    },
+    "background": {
         "Water": {
             "path": "water",
             "animation": {

@@ -51,7 +51,6 @@ pub enum BlockType {
     TreeLeafsLeft,
     TreeLeafsMiddle,
     TreeLeafsRight,
-    Water,
     Air,
 }
 
@@ -143,10 +142,9 @@ impl BlockType {
 
     fn collidable(self) -> bool {
         match self {
-            BlockType::TreeTrunk
-            | BlockType::TreeTrunkTop
-            | BlockType::Air
-            | BlockType::Water => false,
+            BlockType::TreeTrunk | BlockType::TreeTrunkTop | BlockType::Air => {
+                false
+            },
             _ => true,
         }
     }
@@ -160,26 +158,30 @@ impl<'a> Drawable for ThemedBlock<'a> {
             return;
         }
 
-        let info = res.block_texture_info(*block);
+        let (src_region, dest, path) = {
+            let info = res.block_texture_info(*block);
+    
+            let (x, y) = data.position;
+            let width = (info.width as f64 * data.scale) as u32;
+            let height = (info.height as f64 * data.scale) as u32;
+    
+            if !data.camera.in_view(rect!(x, y, width, height)) {
+                return;
+            }
+    
+            let theme = data.object.theme;
+    
+            let sprite_x = (info.frame_index(data.tick) * info.width) as i32;
+            let sprite_y = (info.variant_index(theme) * info.height) as i32;
+            
+            let src_region = rect!(sprite_x, sprite_y, info.width, info.height);
+            let (cam_x, cam_y) = data.camera.translate_coords((x, y));
+            let dest = rect!(cam_x, cam_y, width, height);
 
-        let (x, y) = data.position;
-        let width = (info.width as f64 * data.scale) as u32;
-        let height = (info.height as f64 * data.scale) as u32;
+            (src_region, dest, info.path.clone())
+        };
 
-        if !data.camera.in_view(rect!(x, y, width, height)) {
-            return;
-        }
-
-        let theme = data.object.theme;
-
-        let sprite_x = (info.frame_index(data.tick) * info.width) as i32;
-        let sprite_y = (info.variant_index(theme) * info.height) as i32;
-
-        let texture = res.texture(&info.path);
-
-        let src_region = rect!(sprite_x, sprite_y, info.width, info.height);
-        let (cam_x, cam_y) = data.camera.translate_coords((x, y));
-        let dest = rect!(cam_x, cam_y, width, height);
+        let texture = res.texture(&path);
 
         data.renderer
             .canvas

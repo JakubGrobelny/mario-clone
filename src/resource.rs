@@ -12,6 +12,7 @@ use sdl2::video::WindowContext;
 
 use serde::{Deserialize, Serialize};
 
+use crate::background::*;
 use crate::block::*;
 use crate::level::*;
 use crate::utility::*;
@@ -49,7 +50,8 @@ pub struct TextureAnimation {
 
 #[derive(Deserialize)]
 pub struct TexturePaths {
-    block_textures: HashMap<BlockType, TextureInfo>,
+    blocks:     HashMap<BlockType, TextureInfo>,
+    background: HashMap<BackgroundElement, TextureInfo>,
 }
 
 pub struct ResourceCache<'a, Key, Resource, Loader>
@@ -116,7 +118,7 @@ impl ResourceManager<'_> {
         font.set_style(sdl2::ttf::FontStyle::NORMAL);
 
         let texture_info =
-            fs::read_to_string(res_path.join("textures/paths.json"))
+            fs::read_to_string(res_path.join("textures/info.json"))
                 .map(|info_str| serde_json::from_str(&info_str))??;
 
         Ok(ResourceManager {
@@ -131,9 +133,9 @@ impl ResourceManager<'_> {
         &self.font
     }
 
-    pub fn block_texture_info(&self, block: Block) -> TextureInfo {
+    pub fn block_texture_info(&self, block: Block) -> &TextureInfo {
         self.texture_info
-            .block_textures
+            .blocks
             .get(&block.kind())
             .or_else(|| {
                 panic_with_messagebox!(
@@ -141,7 +143,20 @@ impl ResourceManager<'_> {
                     block.kind()
                 )
             })
-            .unwrap().clone()
+            .unwrap()
+    }
+
+    pub fn bg_texture_info(&self, bg: BackgroundElement) -> &TextureInfo {
+        self.texture_info
+            .background
+            .get(&bg)
+            .or_else(|| {
+                panic_with_messagebox!(
+                    "Failed to find texture info for {:?}",
+                    bg
+                )
+            })
+            .unwrap()
     }
 
     pub fn texture(&mut self, name: &str) -> Rc<Texture> {
@@ -235,7 +250,6 @@ impl TextureInfo {
     }
 }
 
-
 // for serde_json default values purposes
 fn default_themed() -> bool {
     true
@@ -252,6 +266,6 @@ fn default_width() -> u32 {
 fn default_animation() -> TextureAnimation {
     TextureAnimation {
         frames: 1,
-        speed: 1,
+        speed:  1,
     }
 }
