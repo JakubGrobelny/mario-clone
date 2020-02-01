@@ -4,13 +4,14 @@ use crate::hitbox::*;
 use sdl2::render::Texture;
 
 use std::rc::Rc;
+use std::hash::Hasher;
 
-pub enum ObjectType {
+pub enum EntityType {
     Block(BlockType),
 }
 
-pub struct Object<'a> {
-    kind:    ObjectType,
+pub struct Entity<'a> {
+    kind:    EntityType,
     hitbox:  Hitbox,
     texture: Rc<Texture<'a>>,
 }

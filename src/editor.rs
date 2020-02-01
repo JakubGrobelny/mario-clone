@@ -24,6 +24,7 @@ pub struct Editor {
 enum Selection {
     Block(Block),
     Background(BackgroundElement),
+    Collectible(Collectible),
 }
 
 enum ButtonEffect {
@@ -79,13 +80,10 @@ impl Editor {
 
     fn swap_selection(&mut self, state: &mut SharedState) {
         let scroll = state.controller.mouse().scroll();
-        if scroll == 0 {
-            return;
-        }
 
         if scroll > 0 {
             self.selected.set_to_next()
-        } else {
+        } else if scroll < 0 {
             self.selected.set_to_prev()
         }
     }
@@ -111,7 +109,7 @@ impl Editor {
         ActivityResult::Active
     }
 
-    pub fn coords_to_block((x,y): (i32, i32)) -> (usize, usize) {
+    pub fn coords_to_block((x, y): (i32, i32)) -> (usize, usize) {
         let block_x = (x / BLOCK_SIZE as i32) as usize;
         let block_y = (y / BLOCK_SIZE as i32) as usize;
         (block_x, block_y)
@@ -135,6 +133,11 @@ impl Editor {
             Selection::Background(bg) => {
                 self.level.set_bg(pos, bg);
             },
+            Selection::Collectible(collectible) => {
+                if self.level.get_block(pos).is_bumpable() {
+                    self.level.fill_block(pos, collectible);
+                }
+            },
         }
     }
 
@@ -146,6 +149,9 @@ impl Editor {
             Selection::Background(..) => {
                 self.level.set_bg(pos, BackgroundElement::default());
             },
+            Selection::Collectible(..) => {
+                self.level.remove_block_contents(pos);
+            },
         }
     }
 
@@ -155,12 +161,21 @@ impl Editor {
             Selection::Background(..) => {
                 Selection::Background(self.level.get_bg(pos))
             },
+            Selection::Collectible(..) => {
+                let contents = self.level.get_block(pos).get_contents();
+                if contents != Collectible::Empty {
+                    Selection::Collectible(contents)
+                } else {
+                    self.selected
+                }
+            },
         };
 
         self.selected = pointed;
     }
 
     fn modify_level(&mut self, state: &mut SharedState) {
+        // TODO: fix it so that it uses was_button_pressed instead
         if state.controller.mouse().is_left_button_active() {
             if let Some(coords) = self.cursor_block(state) {
                 self.set_selected(coords);
@@ -189,10 +204,8 @@ impl Editor {
                 self.level.theme = self.level.theme.prev();
             } else if state.controller.was_key_pressed(Key::Right) {
                 self.level.theme = self.level.theme.next();
-            } else if state.controller.was_key_pressed(Key::Up) {
-                self.selected.set_to_next_layer();
-            } else if state.controller.was_key_pressed(Key::Down) {
-                self.selected.set_to_prev_layer();
+            } else if state.controller.was_key_pressed(Key::Tab) {
+                self.selected.switch_layer();
             }
 
             self.swap_selection(state);
@@ -225,6 +238,10 @@ impl Editor {
                 call.draw_with(&themed_bg, renderer)
                     .show(&mut state.resources);
             },
+            Selection::Collectible(collectible) => {
+                call.draw_with(&collectible, renderer)
+                    .show(&mut state.resources);
+            },
         }
     }
 
@@ -250,22 +267,20 @@ impl Editor {
 }
 
 impl Selection {
-    pub fn set_to_next_layer(&mut self) {
+    pub fn switch_layer(&mut self) {
         let new = match self {
             Selection::Block(..) => {
                 Selection::Background(BackgroundElement::default_visible())
             },
             Selection::Background(..) => {
+                Selection::Collectible(Collectible::Coins(1))
+            }
+            Selection::Collectible(..) => {
                 Selection::Block(Block::default_visible())
             },
         };
 
         *self = new
-    }
-
-    pub fn set_to_prev_layer(&mut self) {
-        // TODO: implement once there are more than two layers
-        self.set_to_next_layer();
     }
 
     pub fn set_to_next(&mut self) {
@@ -280,6 +295,7 @@ impl Selection {
         match self {
             Selection::Block(block) => Selection::Block(block.next_kind()),
             Selection::Background(bg) => Selection::Background(bg.next()),
+            Selection::Collectible(c) => Selection::Collectible(c.next()),
         }
     }
 
@@ -287,6 +303,7 @@ impl Selection {
         match self {
             Selection::Block(block) => Selection::Block(block.prev_kind()),
             Selection::Background(bg) => Selection::Background(bg.prev()),
+            Selection::Collectible(c) => Selection::Collectible(c.prev()),
         }
     }
 }

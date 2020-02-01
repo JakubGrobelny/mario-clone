@@ -14,7 +14,7 @@ pub const BLOCK_SIZE: u32 = 64;
 #[derive(Copy, Clone, Deserialize, Serialize, PartialEq, Eq, Debug)]
 pub struct Block {
     kind:     BlockType,
-    contents: Option<BlockContents>,
+    contents: Collectible,
 }
 
 #[derive(Copy, Clone)]
@@ -24,6 +24,7 @@ pub struct Block {
 #[repr(u8)]
 pub enum BlockType {
     Bricks = 0,
+    SolidBox,
     Rock,
     RockLeft,
     RockMiddle,
@@ -48,8 +49,6 @@ pub enum BlockType {
     PipeSidewaysRightUpper,
     PipeJunctionLower,
     PipeJunctionUpper,
-    TreeTrunk,
-    TreeTrunkTop,
     TreeLeafsLeft,
     TreeLeafsMiddle,
     TreeLeafsRight,
@@ -61,13 +60,21 @@ pub struct ThemedBlock {
     pub theme: LevelTheme,
 }
 
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub enum Collectible {
+    Coins(u8),
+    Mushroom,
+    Flower,
+    Empty,
+}
+
 const MAX_BLOCK: u8 = BlockType::Air as u8;
 
 impl From<BlockType> for Block {
     fn from(block_type: BlockType) -> Block {
         Block {
             kind:     block_type,
-            contents: None,
+            contents: Collectible::Empty,
         }
     }
 }
@@ -83,22 +90,23 @@ impl Block {
         Self::from(BlockType::Bricks)
     }
 
-    pub fn new(kind: BlockType, contents: BlockContents) -> Self {
-        Block {
-            kind,
-            contents: Some(contents),
+    pub fn new(kind: BlockType, contents: Collectible) -> Self {
+        Block { kind, contents }
+    }
+
+    pub fn is_collidable(self) -> bool {
+        self.kind.is_collidable()
+    }
+
+    pub fn is_empty(self) -> bool {
+        match self.contents {
+            Collectible::Empty => true,
+            _ => false,
         }
     }
 
-    pub fn new_empty(kind: BlockType) -> Self {
-        Block {
-            kind,
-            contents: None,
-        }
-    }
-
-    pub fn collidable(self) -> bool {
-        self.kind.collidable()
+    pub fn is_bumpable(self) -> bool {
+        self.kind().is_bumpable()
     }
 
     pub fn kind(self) -> BlockType {
@@ -113,15 +121,30 @@ impl Block {
         Block::from(self.kind.prev())
     }
 
+    pub fn insert_item(&mut self, item: Collectible) {
+        assert_ne!(item, Collectible::Coins(0));
+        self.contents = match (self.contents, item) {
+            (Collectible::Coins(n), Collectible::Coins(m)) => {
+                Collectible::Coins(n + m)
+            },
+            (_, item) => item,
+        }
+    }
+
+    pub fn delete_item(&mut self) {
+        self.contents = match self.contents {
+            Collectible::Coins(n) if n > 1 => Collectible::Coins(n - 1),
+            _ => Collectible::Empty,
+        }
+    }
+
     pub fn is_visible(self) -> bool {
         self.kind.is_visible()
     }
-}
 
-#[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub enum BlockContents {
-    Coins(u8),
-    Mushroom,
+    pub fn get_contents(self) -> Collectible {
+        self.contents
+    }
 }
 
 impl Default for BlockType {
@@ -146,12 +169,14 @@ impl BlockType {
         self != BlockType::Air
     }
 
-    fn collidable(self) -> bool {
+    fn is_collidable(self) -> bool {
+        self != BlockType::Air
+    }
+
+    fn is_bumpable(self) -> bool {
         match self {
-            BlockType::TreeTrunk | BlockType::TreeTrunkTop | BlockType::Air => {
-                false
-            },
-            _ => true,
+            BlockType::Bricks | BlockType::QuestionMark => true,
+            _ => false,
         }
     }
 }
@@ -166,45 +191,82 @@ impl Drawable for ThemedBlock {
 
         let (src_region, dest, path) = {
             let info = res.block_texture_info(block);
-    
             let (x, y) = data.position;
             let width = (info.width as f64 * data.scale) as u32;
             let height = (info.height as f64 * data.scale) as u32;
-    
             if !data.camera.in_view(rect!(x, y, width, height)) {
                 return;
             }
-    
             let theme = data.object.theme;
-    
             let sprite_x = (info.frame_index(data.tick) * info.width) as i32;
             let sprite_y = (info.variant_index(theme) * info.height) as i32;
-            
             let src_region = rect!(sprite_x, sprite_y, info.width, info.height);
             let (cam_x, cam_y) = data.camera.translate_coords((x, y));
             let dest = rect!(cam_x, cam_y, width, height);
 
             if data.mode == DrawMode::EditorSelection {
-                let rect = rect!(
-                    x,
-                    y,
-                    info.width,
-                    info.height
-                );
+                let rect = rect!(x, y, info.width, info.height);
                 data.renderer.canvas.set_draw_color(Color::RGB(255, 0, 0));
                 data.renderer.canvas.draw_rect(rect).expect(
                     "Failed to draw selection rectangle in the editor!",
                 );
             }
-
             (src_region, dest, info.path.clone())
         };
 
-        let texture = res.texture(&path);
-
         data.renderer
             .canvas
-            .copy(&texture, src_region, dest)
+            .copy(&res.texture(&path), src_region, dest)
             .unwrap();
+
+        let is_editor = data.mode == DrawMode::Editor
+            || data.mode == DrawMode::EditorSelection;
+        if is_editor && !block.is_empty() {
+            pass_draw!(data, &block.contents).show(res);
+        }
+    }
+}
+
+impl Collectible {
+    pub fn next(self) -> Self {
+        match self {
+            Collectible::Coins(_) => Collectible::Mushroom,
+            Collectible::Mushroom => Collectible::Flower,
+            Collectible::Flower => Collectible::Coins(1),
+            Collectible::Empty => {
+                panic!("Can't take the successor of empty collectible!")
+            },
+        }
+    }
+
+    pub fn prev(self) -> Self {
+        match self {
+            Collectible::Coins(_) => Collectible::Flower,
+            Collectible::Flower => Collectible::Mushroom,
+            Collectible::Mushroom => Collectible::Coins(1),
+            Collectible::Empty => {
+                panic!("Can't take the predecessor of empty collectible!")
+            },
+        }
+    }
+}
+
+impl Drawable for Collectible {
+    fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
+        // TODO: implement
+        match data.mode {
+            DrawMode::Editor | DrawMode::EditorSelection => {
+                let text = match data.object {
+                    Collectible::Coins(amount) => format!("{}", amount),
+                    Collectible::Flower => String::from("F"),
+                    Collectible::Mushroom => String::from("M"),
+                    _ => String::from(""),
+                };
+
+                let text = text!(&text);
+                pass_draw!(data, &text).scale(0.4).show(res);
+            },
+            _ => unimplemented!(),
+        }
     }
 }

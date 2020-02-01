@@ -14,6 +14,9 @@
                 "speed": 8
             }
         },
+        "SolidBox": {
+            "path": "solid"
+        },
         "RockLeft": {
             "path": "rock/left"
         },
@@ -81,12 +84,6 @@
         "PipeJunctionUpper": {
             "path": "pipe/junction/upper"
         },
-        "TreeTrunk": {
-            "path": "tree/trunk"
-        },
-        "TreeTrunkTop": {
-            "path": "tree/trunk/top"
-        },
         "TreeLeafsLeft": {
             "path": "tree/leafs/left"
         },
@@ -143,7 +140,12 @@
                 "frames": 3,
                 "speed": 2
             }
+        },
+        "BigTreeTrunk": {
+            "path": "tree/trunk"
+        },
+        "BigTreeTrunkTop": {
+            "path": "tree/trunk/top"
         }
-
     }
 }

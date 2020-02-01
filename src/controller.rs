@@ -40,6 +40,7 @@ pub enum Key {
     Escape,
     Sprint,
     Enter,
+    Tab,
 
     Invalid,
 }
@@ -57,6 +58,7 @@ impl From<Keycode> for Key {
             Keycode::KpEnter => Key::Enter,
             Keycode::LShift => Key::Sprint,
             Keycode::Return => Key::Enter,
+            Keycode::Tab => Key::Tab,
             _ => Key::Invalid,
         }
     }

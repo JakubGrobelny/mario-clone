@@ -265,8 +265,9 @@ macro_rules! centered_text {
 
 #[macro_export]
 macro_rules! text {
-    ($test:expr) => {
-        TextBuilder::new($text).build()
+    ($text:expr) => {
+        TextBuilder::new($text)
+            .build()
     };
 }
 

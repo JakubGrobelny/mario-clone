@@ -164,6 +164,14 @@ impl Level {
     pub fn set_block(&mut self, (x, y): (usize, usize), block: Block) {
         self.blocks[y][x] = block;
     }
+
+    pub fn fill_block(&mut self, (x, y): (usize, usize), item: Collectible) {
+        self.blocks[y][x].insert_item(item);
+    }
+
+    pub fn remove_block_contents(&mut self, (x, y): (usize, usize)) {
+        self.blocks[y][x].delete_item();
+    }
 }
 
 impl From<LevelTheme> for Color {

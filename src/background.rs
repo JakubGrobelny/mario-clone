@@ -21,6 +21,8 @@ pub enum BackgroundElement {
     TreeTopSmall,
     TreeTopBig,
     TreeBottom,
+    BigTreeTrunk,
+    BigTreeTrunkTop,
     GrassLeft,
     GrassRight,
     GrassMiddle,
@@ -88,12 +90,7 @@ impl Drawable for ThemedBackgroundElement {
             let dest = rect!(cam_x, cam_y, width, height);
 
             if data.mode == DrawMode::EditorSelection {
-                let rect = rect!(
-                    x,
-                    y,
-                    info.width,
-                    info.height
-                );
+                let rect = rect!(x, y, info.width, info.height);
                 data.renderer.canvas.set_draw_color(Color::RGB(255, 0, 0));
                 data.renderer.canvas.draw_rect(rect).expect(
                     "Failed to draw selection rectangle in the editor!",

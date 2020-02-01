@@ -16,6 +16,7 @@ use crate::background::*;
 use crate::block::*;
 use crate::level::*;
 use crate::utility::*;
+use crate::entity::*;
 
 pub struct ResourceManager<'a> {
     res_path:     PathBuf,
@@ -50,8 +51,8 @@ pub struct TextureAnimation {
 
 #[derive(Deserialize)]
 pub struct TexturePaths {
-    blocks:     HashMap<BlockType, TextureInfo>,
-    background: HashMap<BackgroundElement, TextureInfo>,
+    blocks:       HashMap<BlockType, TextureInfo>,
+    background:   HashMap<BackgroundElement, TextureInfo>,
 }
 
 pub struct ResourceCache<'a, Key, Resource, Loader>
