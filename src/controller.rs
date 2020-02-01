@@ -11,18 +11,23 @@ pub enum KeyEventType {
 
 #[derive(Debug, Copy, Clone, std::cmp::PartialEq)]
 pub enum ButtonState {
-    Active,
+    Active(u8),
     Inactive,
-    Pressed,
 }
 
 #[derive(Debug)]
 pub struct Mouse {
-    pos:           (i32, i32),
-    left_button:   ButtonState,
-    right_button:  ButtonState,
-    middle_button: ButtonState,
-    scroll:        i32,
+    pos:     (i32, i32),
+    buttons: [ButtonState; 3],
+    scroll:  i32,
+}
+
+#[derive(Copy, Clone)]
+#[repr(usize)]
+pub enum MButton {
+    Left,
+    Right,
+    Middle,
 }
 
 #[derive(Debug)]
@@ -31,6 +36,7 @@ pub struct Controller {
     keys:  [ButtonState; KEY_NUM],
 }
 
+#[derive(Copy, Clone)]
 #[repr(usize)]
 pub enum Key {
     Up = 0,
@@ -41,6 +47,7 @@ pub enum Key {
     Sprint,
     Enter,
     Tab,
+    Ctrl,
 
     Invalid,
 }
@@ -59,6 +66,7 @@ impl From<Keycode> for Key {
             Keycode::LShift => Key::Sprint,
             Keycode::Return => Key::Enter,
             Keycode::Tab => Key::Tab,
+            Keycode::LCtrl => Key::Ctrl,
             _ => Key::Invalid,
         }
     }
@@ -95,20 +103,17 @@ impl From<&Controller> for Vector2D<f64> {
 
 impl ButtonState {
     fn update_with_event(&mut self, event: KeyEventType) {
-        use ButtonState::*;
-        use KeyEventType::*;
-
-        match (&self, event) {
-            (Active, Up) => *self = Inactive,
-            (Inactive, Down) => *self = Pressed,
-            (Pressed, Up) => *self = Inactive,
-            _ => (),
+        match event {
+            KeyEventType::Up => *self = ButtonState::Inactive,
+            KeyEventType::Down => *self = ButtonState::Active(0),
         }
     }
 
-    fn update_pressed(&mut self) {
-        if let ButtonState::Pressed = &self {
-            *self = ButtonState::Active
+    fn update_time(&mut self) {
+        if let ButtonState::Active(time) = *self {
+            if time != std::u8::MAX {
+                *self = ButtonState::Active(time + 1)
+            }
         }
     }
 }
@@ -129,11 +134,13 @@ impl Controller {
 
     pub fn update(&mut self, events: &[Event]) {
         for key in self.keys.iter_mut() {
-            key.update_pressed();
+            key.update_time();
         }
 
-        self.mouse.right_button.update_pressed();
-        self.mouse.left_button.update_pressed();
+        for button in self.mouse.buttons.iter_mut() {
+            button.update_time();
+        }
+
         self.mouse.scroll = 0;
 
         for event in events.iter() {
@@ -177,17 +184,41 @@ impl Controller {
         &self.mouse
     }
 
+    pub fn is_key_active_timed(&self, key: Key, time: u8) -> bool {
+        match self.keys[key as usize] {
+            ButtonState::Active(t) if t >= time => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_key_active_delayed(&self, key: Key, time: u8) -> bool {
+        self.was_key_pressed(key) || self.is_key_active_timed(key, time)
+    }
+
     pub fn is_key_active(&self, key: Key) -> bool {
         self.keys[key as usize] != ButtonState::Inactive
     }
 
     pub fn was_key_pressed(&self, key: Key) -> bool {
-        self.keys[key as usize] == ButtonState::Pressed
+        self.keys[key as usize] == ButtonState::Active(0)
+    }
+
+    pub fn is_button_active_delayed(&self, button: MButton, time: u8) -> bool {
+        self.mouse.is_button_active_delayed(button, time)
+    }
+
+    pub fn is_button_active(&self, button: MButton) -> bool {
+        self.mouse.is_button_active(button)
+    }
+
+    pub fn was_button_pressed(&self, button: MButton) -> bool {
+        self.mouse.was_button_pressed(button)
     }
 
     pub fn clear_mouse(&mut self) {
-        self.mouse.right_button = ButtonState::Inactive;
-        self.mouse.left_button = ButtonState::Inactive;
+        for button in self.mouse.buttons.iter_mut() {
+            *button = ButtonState::Inactive;
+        }
     }
 }
 
@@ -200,11 +231,9 @@ impl Default for Mouse {
 impl Mouse {
     pub fn new() -> Mouse {
         Mouse {
-            pos:           (0, 0),
-            left_button:   ButtonState::Inactive,
-            right_button:  ButtonState::Inactive,
-            middle_button: ButtonState::Inactive,
-            scroll:        0,
+            pos:     (0, 0),
+            buttons: [ButtonState::Inactive; 3],
+            scroll:  0,
         }
     }
 
@@ -216,28 +245,24 @@ impl Mouse {
         self.scroll
     }
 
-    pub fn was_left_button_pressed(&self) -> bool {
-        self.left_button == ButtonState::Pressed
+    pub fn is_button_active_delayed(&self, button: MButton, time: u8) -> bool {
+        self.was_button_pressed(button)
+            || self.is_button_active_timed(button, time)
     }
 
-    pub fn was_right_button_pressed(&self) -> bool {
-        self.right_button == ButtonState::Pressed
+    pub fn is_button_active(&self, button: MButton) -> bool {
+        self.buttons[button as usize] != ButtonState::Inactive
     }
 
-    pub fn was_middle_button_pressed(&self) -> bool {
-        self.middle_button == ButtonState::Pressed
+    pub fn is_button_active_timed(&self, button: MButton, time: u8) -> bool {
+        match self.buttons[button as usize] {
+            ButtonState::Active(t) if t >= time => true,
+            _ => false,
+        }
     }
 
-    pub fn is_left_button_active(&self) -> bool {
-        self.left_button != ButtonState::Inactive
-    }
-
-    pub fn is_right_button_active(&self) -> bool {
-        self.right_button != ButtonState::Inactive
-    }
-
-    pub fn is_middle_button_active(&self) -> bool {
-        self.middle_button != ButtonState::Inactive
+    pub fn was_button_pressed(&self, button: MButton) -> bool {
+        self.buttons[button as usize] == ButtonState::Active(0)
     }
 
     pub fn update_position(&mut self, x: i32, y: i32) {
@@ -251,13 +276,13 @@ impl Mouse {
     ) {
         match button {
             MouseButton::Left => {
-                self.left_button.update_with_event(event);
+                self.buttons[MButton::Left as usize].update_with_event(event);
             },
             MouseButton::Right => {
-                self.right_button.update_with_event(event);
+                self.buttons[MButton::Right as usize].update_with_event(event);
             },
             MouseButton::Middle => {
-                self.middle_button.update_with_event(event);
+                self.buttons[MButton::Middle as usize].update_with_event(event);
             },
             _ => (),
         }

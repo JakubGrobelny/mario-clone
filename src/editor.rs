@@ -176,15 +176,17 @@ impl Editor {
 
     fn modify_level(&mut self, state: &mut SharedState) {
         // TODO: fix it so that it uses was_button_pressed instead
-        if state.controller.mouse().is_left_button_active() {
+        let controller = &state.controller;
+        
+        if controller.is_button_active_delayed(MButton::Left, 20) {
             if let Some(coords) = self.cursor_block(state) {
                 self.set_selected(coords);
             }
-        } else if state.controller.mouse().is_right_button_active() {
+        } else if controller.is_button_active_delayed(MButton::Right, 20) {
             if let Some(coords) = self.cursor_block(state) {
                 self.free_selected(coords);
             }
-        } else if state.controller.mouse().is_middle_button_active() {
+        } else if controller.is_button_active_delayed(MButton::Middle, 20) {
             if let Some(coords) = self.cursor_block(state) {
                 self.copy_pointed(coords);
             }
@@ -274,7 +276,7 @@ impl Selection {
             },
             Selection::Background(..) => {
                 Selection::Collectible(Collectible::Coins(1))
-            }
+            },
             Selection::Collectible(..) => {
                 Selection::Block(Block::default_visible())
             },

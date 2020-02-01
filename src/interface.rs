@@ -33,7 +33,7 @@ pub struct ButtonColumnBuilder<'a, T> {
 
 impl<T> ButtonColumn<T> {
     pub fn effect_if_clicked(&self, controller: &Controller) -> Option<&T> {
-        if !controller.mouse().was_left_button_pressed() {
+        if !controller.was_button_pressed(MButton::Left) {
             return None;
         }
 
