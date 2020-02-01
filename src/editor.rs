@@ -163,7 +163,7 @@ impl Editor {
             },
             Selection::Collectible(..) => {
                 let contents = self.level.get_block(pos).get_contents();
-                if contents != Collectible::Empty {
+                if let Some(contents) = contents {
                     Selection::Collectible(contents)
                 } else {
                     self.selected
@@ -178,15 +178,15 @@ impl Editor {
         // TODO: fix it so that it uses was_button_pressed instead
         let controller = &state.controller;
         
-        if controller.is_button_active_delayed(MButton::Left, 20) {
+        if controller.is_button_active_delayed(MButton::Left, 10) {
             if let Some(coords) = self.cursor_block(state) {
                 self.set_selected(coords);
             }
-        } else if controller.is_button_active_delayed(MButton::Right, 20) {
+        } else if controller.is_button_active_delayed(MButton::Right, 10) {
             if let Some(coords) = self.cursor_block(state) {
                 self.free_selected(coords);
             }
-        } else if controller.is_button_active_delayed(MButton::Middle, 20) {
+        } else if controller.is_button_active_delayed(MButton::Middle, 10) {
             if let Some(coords) = self.cursor_block(state) {
                 self.copy_pointed(coords);
             }

@@ -14,9 +14,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::background::*;
 use crate::block::*;
+use crate::entity::*;
 use crate::level::*;
 use crate::utility::*;
-use crate::entity::*;
 
 pub struct ResourceManager<'a> {
     res_path:     PathBuf,
@@ -50,9 +50,10 @@ pub struct TextureAnimation {
 }
 
 #[derive(Deserialize)]
-pub struct TexturePaths {
-    blocks:       HashMap<BlockType, TextureInfo>,
-    background:   HashMap<BackgroundElement, TextureInfo>,
+struct TexturePaths {
+    blocks:     HashMap<BlockType, TextureInfo>,
+    background: HashMap<BackgroundElement, TextureInfo>,
+    entities:   HashMap<EntityTextureId, TextureInfo>,
 }
 
 pub struct ResourceCache<'a, Key, Resource, Loader>
@@ -145,30 +146,30 @@ impl ResourceManager<'_> {
         &self.font
     }
 
-    pub fn block_texture_info(&self, block: Block) -> &TextureInfo {
-        self.texture_info
-            .blocks
-            .get(&block.kind())
+    pub fn texture_info<'a, T: Hash + Eq + std::fmt::Debug>(
+        map: &'a HashMap<T, TextureInfo>,
+        key: &T,
+    ) -> &'a TextureInfo {
+        map.get(key)
             .or_else(|| {
                 panic_with_messagebox!(
                     "Failed to find texture info for {:?}",
-                    block.kind()
+                    key
                 )
             })
             .unwrap()
     }
 
+    pub fn block_texture_info(&self, block: Block) -> &TextureInfo {
+        Self::texture_info(&self.texture_info.blocks, &block.kind())
+    }
+
+    pub fn entity_texture_info(&self, entity: EntityTextureId) -> &TextureInfo {
+        Self::texture_info(&self.texture_info.entities, &entity)
+    }
+
     pub fn bg_texture_info(&self, bg: BackgroundElement) -> &TextureInfo {
-        self.texture_info
-            .background
-            .get(&bg)
-            .or_else(|| {
-                panic_with_messagebox!(
-                    "Failed to find texture info for {:?}",
-                    bg
-                )
-            })
-            .unwrap()
+        Self::texture_info(&self.texture_info.background, &bg)
     }
 
     pub fn texture(&mut self, name: &str) -> Rc<Texture> {

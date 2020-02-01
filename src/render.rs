@@ -120,6 +120,12 @@ impl PartialDrawCall {
         self
     }
 
+    pub fn shift(mut self, shift: (i32, i32)) -> Self {
+        self.position.0 += shift.0;
+        self.position.1 += shift.1;
+        self
+    }
+
     pub fn mode(mut self, mode: DrawMode) -> Self {
         self.mode = mode;
         self
@@ -266,8 +272,7 @@ macro_rules! centered_text {
 #[macro_export]
 macro_rules! text {
     ($text:expr) => {
-        TextBuilder::new($text)
-            .build()
+        TextBuilder::new($text).build()
     };
 }
 
@@ -309,6 +314,13 @@ impl<'a, T: Drawable> DrawCall<'a, T> {
         self.mode = mode;
         self
     }
+
+    pub fn shift(mut self, shift: (i32, i32)) -> Self {
+        self.position.0 += shift.0;
+        self.position.1 += shift.1;
+        self
+    }
+
 }
 
 impl Default for Camera {

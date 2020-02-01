@@ -1,13 +1,13 @@
 {
     "blocks": {
         "Bricks": {
-            "path": "brick"
+            "path": "block/brick"
         },
         "Rock": {
-            "path": "rock"
+            "path": "block/rock"
         },
         "QuestionMark": {
-            "path": "question_mark/full",
+            "path": "block/question_mark/full",
             "themed": false,
             "animation": {
                 "frames": 4,
@@ -15,83 +15,83 @@
             }
         },
         "SolidBox": {
-            "path": "solid"
+            "path": "block/solid"
         },
         "RockLeft": {
-            "path": "rock/left"
+            "path": "block/rock/left"
         },
         "RockRight": {
-            "path": "rock/right"
+            "path": "block/rock/right"
         },
         "RockMiddle": {
-            "path": "rock/middle"
+            "path": "block/rock/middle"
         },
         "Ground": {
-            "path": "ground"
+            "path": "block/ground"
         },
         "GroundLeft": {
-            "path": "ground/left"
+            "path": "block/ground/left"
         },
         "GroundRight": {
-            "path": "ground/right"
+            "path": "block/ground/right"
         },
         "GroundMiddle": {
-            "path": "ground/middle"
+            "path": "block/ground/middle"
         },
         "GroundBottom": {
-            "path": "ground/bottom"
+            "path": "block/ground/bottom"
         },
         "GroundBottomLeft": {
-            "path": "ground/bottom/left"
+            "path": "block/ground/bottom/left"
         },
         "GroundBottomRight": {
-            "path": "ground/bottom/right"
+            "path": "block/ground/bottom/right"
         },
         "GroundBottomMiddle": {
-            "path": "ground/bottom/middle"
+            "path": "block/ground/bottom/middle"
         },
         "QuestionMarkEmpty": {
-            "path": "question_mark/empty",
+            "path": "block/question_mark/empty",
             "themed": false
         },
         "PipeUpperLeft": {
-            "path": "pipe/up/upper/left"
+            "path": "block/pipe/up/upper/left"
         },
         "PipeUpperRight": {
-            "path": "pipe/up/upper/right"
+            "path": "block/pipe/up/upper/right"
         },
         "PipeLowerLeft": {
-            "path": "pipe/up/lower/left"
+            "path": "block/pipe/up/lower/left"
         },
         "PipeLowerRight": {
-            "path": "pipe/up/lower/right"
+            "path": "block/pipe/up/lower/right"
         },
         "PipeSidewaysLeftBottom": {
-            "path": "pipe/sideways/left/lower"
+            "path": "block/pipe/sideways/left/lower"
         },
         "PipeSidewaysLeftUpper": {
-            "path": "pipe/sideways/left/upper"
+            "path": "block/pipe/sideways/left/upper"
         },
         "PipeSidewaysRightBottom": {
-            "path": "pipe/sideways/right/lower"
+            "path": "block/pipe/sideways/right/lower"
         },
         "PipeSidewaysRightUpper": {
-            "path": "pipe/sideways/right/upper"
+            "path": "block/pipe/sideways/right/upper"
         },
         "PipeJunctionLower": {
-            "path": "pipe/junction/lower"
+            "path": "block/pipe/junction/lower"
         },
         "PipeJunctionUpper": {
-            "path": "pipe/junction/upper"
+            "path": "block/pipe/junction/upper"
         },
         "TreeLeafsLeft": {
-            "path": "tree/leafs/left"
+            "path": "block/tree/leafs/left"
         },
         "TreeLeafsMiddle": {
-            "path": "tree/leafs/middle"
+            "path": "block/tree/leafs/middle"
         },
         "TreeLeafsRight": {
-            "path": "tree/leafs/right"
+            "path": "block/tree/leafs/right"
         }
     },
     "background": {
@@ -142,10 +142,28 @@
             }
         },
         "BigTreeTrunk": {
-            "path": "tree/trunk"
+            "path": "block/tree/trunk"
         },
         "BigTreeTrunkTop": {
-            "path": "tree/trunk/top"
+            "path": "block/tree/trunk/top"
+        }
+    },
+    "entities": {
+        "CollectibleCoin": {
+            "path": "entity/collectible/coin",
+            "themes": false,
+            "animation": {
+                "frames": 3,
+                "speed": 5
+            }
+        },
+        "CollectibleMushroom": {
+            "path": "entity/collectible/mushroom",
+            "themes": false
+        },
+        "CollectibleFlower": {
+            "path": "entity/collectible/flower",
+            "themes": false
         }
     }
 }

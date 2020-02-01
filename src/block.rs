@@ -1,3 +1,4 @@
+use crate::entity::*;
 use crate::level::*;
 use crate::render::*;
 use crate::resource::*;
@@ -14,7 +15,7 @@ pub const BLOCK_SIZE: u32 = 64;
 #[derive(Copy, Clone, Deserialize, Serialize, PartialEq, Eq, Debug)]
 pub struct Block {
     kind:     BlockType,
-    contents: Collectible,
+    contents: Option<Collectible>,
 }
 
 #[derive(Copy, Clone)]
@@ -60,12 +61,13 @@ pub struct ThemedBlock {
     pub theme: LevelTheme,
 }
 
-#[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Copy, Clone)]
+#[derive(Debug, Deserialize, Serialize)]
+#[derive(PartialEq, Eq, Hash)]
 pub enum Collectible {
     Coins(u8),
     Mushroom,
     Flower,
-    Empty,
 }
 
 const MAX_BLOCK: u8 = BlockType::Air as u8;
@@ -74,7 +76,7 @@ impl From<BlockType> for Block {
     fn from(block_type: BlockType) -> Block {
         Block {
             kind:     block_type,
-            contents: Collectible::Empty,
+            contents: None,
         }
     }
 }
@@ -90,7 +92,7 @@ impl Block {
         Self::from(BlockType::Bricks)
     }
 
-    pub fn new(kind: BlockType, contents: Collectible) -> Self {
+    pub fn new(kind: BlockType, contents: Option<Collectible>) -> Self {
         Block { kind, contents }
     }
 
@@ -99,10 +101,7 @@ impl Block {
     }
 
     pub fn is_empty(self) -> bool {
-        match self.contents {
-            Collectible::Empty => true,
-            _ => false,
-        }
+        self.contents.is_none()
     }
 
     pub fn is_bumpable(self) -> bool {
@@ -124,17 +123,19 @@ impl Block {
     pub fn insert_item(&mut self, item: Collectible) {
         assert_ne!(item, Collectible::Coins(0));
         self.contents = match (self.contents, item) {
-            (Collectible::Coins(n), Collectible::Coins(m)) => {
-                Collectible::Coins(n + m)
+            (Some(Collectible::Coins(n)), Collectible::Coins(m)) => {
+                Some(Collectible::Coins(n + m))
             },
-            (_, item) => item,
+            (_, item) => Some(item),
         }
     }
 
     pub fn delete_item(&mut self) {
         self.contents = match self.contents {
-            Collectible::Coins(n) if n > 1 => Collectible::Coins(n - 1),
-            _ => Collectible::Empty,
+            Some(Collectible::Coins(n)) if n > 1 => {
+                Some(Collectible::Coins(n - 1))
+            },
+            _ => None,
         }
     }
 
@@ -142,7 +143,7 @@ impl Block {
         self.kind.is_visible()
     }
 
-    pub fn get_contents(self) -> Collectible {
+    pub fn get_contents(self) -> Option<Collectible> {
         self.contents
     }
 }
@@ -219,10 +220,8 @@ impl Drawable for ThemedBlock {
             .copy(&res.texture(&path), src_region, dest)
             .unwrap();
 
-        let is_editor = data.mode == DrawMode::Editor
-            || data.mode == DrawMode::EditorSelection;
-        if is_editor && !block.is_empty() {
-            pass_draw!(data, &block.contents).show(res);
+        if data.mode == DrawMode::Editor && !block.is_empty() {
+            pass_draw!(data, &block.contents.unwrap()).show(res);
         }
     }
 }
@@ -233,9 +232,6 @@ impl Collectible {
             Collectible::Coins(_) => Collectible::Mushroom,
             Collectible::Mushroom => Collectible::Flower,
             Collectible::Flower => Collectible::Coins(1),
-            Collectible::Empty => {
-                panic!("Can't take the successor of empty collectible!")
-            },
         }
     }
 
@@ -244,29 +240,59 @@ impl Collectible {
             Collectible::Coins(_) => Collectible::Flower,
             Collectible::Flower => Collectible::Mushroom,
             Collectible::Mushroom => Collectible::Coins(1),
-            Collectible::Empty => {
-                panic!("Can't take the predecessor of empty collectible!")
-            },
         }
     }
 }
 
 impl Drawable for Collectible {
     fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
-        // TODO: implement
-        match data.mode {
-            DrawMode::Editor | DrawMode::EditorSelection => {
-                let text = match data.object {
-                    Collectible::Coins(amount) => format!("{}", amount),
-                    Collectible::Flower => String::from("F"),
-                    Collectible::Mushroom => String::from("M"),
-                    _ => String::from(""),
-                };
-
-                let text = text!(&text);
-                pass_draw!(data, &text).scale(0.4).show(res);
+        let info = match data.object {
+            Collectible::Coins(..) => {
+                res.entity_texture_info(EntityTextureId::CollectibleCoin)
             },
-            _ => unimplemented!(),
+            Collectible::Flower => {
+                res.entity_texture_info(EntityTextureId::CollectibleFlower)
+            },
+            Collectible::Mushroom => {
+                res.entity_texture_info(EntityTextureId::CollectibleMushroom)
+            },
+        };
+
+        let (x, y) = data.position;
+        let width = (info.width as f64 * data.scale) as u32;
+        let height = (info.height as f64 * data.scale) as u32;
+
+        if !data.camera.in_view(rect!(x, y, width, height)) {
+            return;
+        }
+
+        let sprite_x = (info.frame_index(data.tick) * info.width) as i32;
+        let src_region = rect!(sprite_x, 0, info.width, info.height);
+
+        let (cam_x, cam_y) = data.camera.translate_coords((x, y));
+        let dest = rect!(cam_x, cam_y, width, height);
+
+        let path = info.path.clone();
+
+        data.renderer
+            .canvas
+            .copy(&res.texture(&path), src_region, dest)
+            .expect("Failed to draw a collectible entity!");
+
+        if data.mode == DrawMode::Editor {
+            if let Collectible::Coins(amount) = data.object {
+                let amount_str = format!("{}", amount);
+                let text = TextBuilder::new(&amount_str)
+                    .color(Color::RGB(0, 0, 200))
+                    .alignment(TextAlignment::TotalCenter)
+                    .build();
+                let offset_x = width / 2;
+                let offset_y = height / 2;
+                pass_draw!(data, &text)
+                    .scale(0.2)
+                    .shift((offset_x as i32, offset_y as i32))
+                    .show(res);
+            }
         }
     }
 }
