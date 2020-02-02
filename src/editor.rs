@@ -175,18 +175,23 @@ impl Editor {
     }
 
     fn modify_level(&mut self, state: &mut SharedState) {
-        // TODO: fix it so that it uses was_button_pressed instead
+        fn is_proper_input(ctrl: &Controller, button: MButton) -> bool {
+            ctrl.was_button_pressed(button)
+                || ctrl.is_button_active(button)
+                    && ctrl.is_key_active(Key::Ctrl)
+        }
+
         let controller = &state.controller;
-        
-        if controller.is_button_active_delayed(MButton::Left, 10) {
+
+        if is_proper_input(controller, MButton::Left) {
             if let Some(coords) = self.cursor_block(state) {
                 self.set_selected(coords);
             }
-        } else if controller.is_button_active_delayed(MButton::Right, 10) {
+        } else if is_proper_input(controller, MButton::Right) {
             if let Some(coords) = self.cursor_block(state) {
                 self.free_selected(coords);
             }
-        } else if controller.is_button_active_delayed(MButton::Middle, 10) {
+        } else if is_proper_input(controller, MButton::Middle) {
             if let Some(coords) = self.cursor_block(state) {
                 self.copy_pointed(coords);
             }

@@ -19,6 +19,6 @@ Run the project with `cargo run`.
 ### Editor
 
 - Move the camera by moving the mouse cursor to the edge of the window. Press shift for faster movement.
-- Place blocks with `left mouse button`, delete them with `right mouse button`. Copy the block into the selection by clicking the `mouse scroll button`.
+- Place blocks with `left mouse button`, delete them with `right mouse button`. Copy the block into the selection by clicking the `mouse scroll button`. Hold `Ctrl` key to be able to insert blocks by holding the mouse button.
 - Switch level layers with the `TAB` key.
 - Scroll through the avaliable blocks using the `mouse scroll`.

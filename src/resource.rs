@@ -225,38 +225,32 @@ impl ResourceManager<'_> {
             .ok()
     }
 
-    pub fn load_listed_levels(&self) -> Vec<(String, Level)> {
+    pub fn load_existing_level(&self, name: &str) -> Level {
+        self.load_level(name).unwrap_or_else(|| {
+            panic_with_messagebox!("Level '{}' does not exist!", name)
+        })
+    }
+
+    pub fn load_level_list(&self) -> Vec<String> {
         #[derive(Deserialize, Serialize)]
         struct LevelList {
             levels: Vec<String>,
         }
 
-        let levels_path = self.res_path.join("levels/");
-        let level_list: LevelList =
-            fs::read_to_string(levels_path.join("levels.json"))
-                .map_err(|err| err.to_string())
-                .and_then(|contents| {
-                    serde_json::from_str(&contents)
-                        .map_err(|err| err.to_string())
-                })
-                .unwrap_or_else(|err| {
-                    panic_with_messagebox!(
-                        "Failed to load listed levels due to an error in JSON \
-                         file:\n {}",
-                        err
-                    )
-                });
-
-        level_list
-            .levels
-            .into_iter()
-            .map(|name| {
-                let level = self.load_level(&name).unwrap_or_else(|| {
-                    panic_with_messagebox!("Level {} does not exist!", name)
-                });
-                (name, level)
+        let list_path = self.res_path.join("levels/");
+        let list: LevelList = fs::read_to_string(list_path.join("levels.json"))
+            .map_err(|err| err.to_string())
+            .and_then(|contents| {
+                serde_json::from_str(&contents).map_err(|err| err.to_string())
             })
-            .collect()
+            .unwrap_or_else(|err| {
+                panic_with_messagebox!(
+                    "Failed to load level list due to an error in JSON \
+                     file:\n {}",
+                    err
+                )
+            });
+        list.levels
     }
 }
 

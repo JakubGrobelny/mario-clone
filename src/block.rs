@@ -124,7 +124,11 @@ impl Block {
         assert_ne!(item, Collectible::Coins(0));
         self.contents = match (self.contents, item) {
             (Some(Collectible::Coins(n)), Collectible::Coins(m)) => {
-                Some(Collectible::Coins(n + m))
+                if std::u8::MAX - n < m {
+                    Some(Collectible::Coins(std::u8::MAX))
+                } else {
+                    Some(Collectible::Coins(n + m))
+                }
             },
             (_, item) => Some(item),
         }
@@ -285,8 +289,7 @@ impl Drawable for Collectible {
                 let text = TextBuilder::new(&amount_str)
                     .color(Color::RGB(0, 0, 200))
                     .alignment(TextAlignment::TotalCenter)
-                    .build();                
-                
+                    .build();
                 let offset_x = width / 2;
                 let offset_y = height / 2;
                 pass_draw!(data, &text)
