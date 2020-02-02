@@ -96,7 +96,7 @@ impl Game {
             },
             State::Running => {
                 self.player.accelerate(&state.controller);
-                self.player.apply_speed();
+                self.player.apply_movement(&mut self.level);
                 self.player.stick_camera(&mut self.camera);
             },
             State::LevelLoading(0) => {

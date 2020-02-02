@@ -17,3 +17,9 @@ impl CollidableWith<Hitbox> for (i32, i32) {
         hitbox.collides(self)
     }
 }
+
+impl CollidableWith<Hitbox> for Hitbox {
+    fn collides(&self, hitbox: &Hitbox) -> bool {
+        hitbox.has_intersection(*self) || hitbox.contains_rect(*self)
+    }
+}

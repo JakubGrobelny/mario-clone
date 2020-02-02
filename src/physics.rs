@@ -3,6 +3,13 @@ use vector2d::Vector2D;
 
 use crate::hitbox::*;
 
+#[macro_export]
+macro_rules! vec2d {
+    ($x:expr, $y:expr) => {
+        Vector2D { x: $x, y: $y }
+    };
+}
+
 #[derive(Debug)]
 pub struct Physics {
     mass:  f64,
@@ -10,11 +17,10 @@ pub struct Physics {
 }
 
 pub struct PhysicalBody {
-    physics:  Physics,
+    physics:      Physics,
     pub hitbox:   Hitbox,
     pub grounded: bool,
 }
-
 
 impl PhysicalBody {
     pub fn new(mass: f64, hitbox: Hitbox) -> Self {
@@ -29,11 +35,16 @@ impl PhysicalBody {
         self.physics.accelerate(self.grounded, accel);
     }
 
-    pub fn apply_speed(&mut self) {
-        let x = self.physics.speed.x.round() as i32;
-        let y = self.physics.speed.y.round() as i32;
+    pub fn move_by_vec(&mut self, vec: Vector2D<i32>) {
+        self.hitbox.offset(vec.x, vec.y);
+    }
 
-        self.hitbox.offset(x, y)
+    pub fn move_by(&mut self, (x, y): (i32, i32)) {
+        self.hitbox.offset(x, y);
+    }
+
+    pub fn speed(&self) -> Vector2D<f64> {
+        self.physics.speed
     }
 
     pub fn speed_y(&self) -> f64 {
@@ -43,13 +54,10 @@ impl PhysicalBody {
     pub fn speed_x(&self) -> f64 {
         self.physics.speed.x
     }
-}
 
-#[macro_export]
-macro_rules! vec2d {
-    ($x:expr, $y:expr) => {
-        Vector2D { x: $x, y: $y }
-    };
+    pub fn position(&self) -> (i32, i32) {
+        (self.hitbox.x(), self.hitbox.y())
+    }
 }
 
 const GRAVITY: f64 = 1.0;
@@ -83,4 +91,11 @@ impl Physics {
 
         self.speed = self.speed + accel + grav_accel - drag;
     }
+}
+
+pub fn vec_map<A, B>(vector: &Vector2D<A>, f: fn(A) -> B) -> Vector2D<B>
+where
+    A: Copy,
+{
+    vec2d!(f(vector.x), f(vector.y))
 }

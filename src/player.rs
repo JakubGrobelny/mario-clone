@@ -4,6 +4,8 @@ use crate::physics::*;
 use crate::render::*;
 use crate::resource::*;
 use crate::utility::*;
+use crate::level::*;
+use crate::movement::*;
 
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
@@ -45,7 +47,7 @@ impl Player {
         const SPEED_JUMP_BONUS: f64 = 0.02;
 
         let mut x_accel = HORIZONTAL_ACCELERATION * controller.x_acceleration();
-        if self.body.grounded {
+        if !self.body.grounded {
             x_accel *= AIRBORNE_HANDICAP;
         }
 
@@ -68,8 +70,8 @@ impl Player {
         self.body.hitbox
     }
 
-    pub fn apply_speed(&mut self) {
-        self.body.apply_speed();
+    pub fn apply_movement(&mut self, world: &mut PlayableLevel) {
+        self.body.apply_movement(world, true);
     }
 
     pub fn stick_camera(&self, cam: &mut Camera) {

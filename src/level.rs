@@ -3,6 +3,7 @@ use crate::block::*;
 use crate::entity::*;
 use crate::render::*;
 use crate::resource::*;
+use crate::hitbox::*;
 
 use sdl2::pixels::Color;
 
@@ -15,10 +16,10 @@ pub type BlockArray<T> = Box<[[T; LEVEL_WIDTH]; LEVEL_HEIGHT]>;
 
 #[derive(Clone)]
 pub struct Level {
-    pub theme: LevelTheme,
-    blocks: BlockArray<Block>,
+    pub theme:  LevelTheme,
+    blocks:     BlockArray<Block>,
     background: BlockArray<BackgroundElement>,
-    entities: Vec<EntityPrototype>,
+    entities:   Vec<EntityPrototype>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -30,8 +31,8 @@ pub struct LevelJSON {
 }
 
 pub struct PlayableLevel {
-    prototype: Level,
-    blocks: BlockArray<RealBlock>,
+    prototype:  Level,
+    pub blocks: BlockArray<RealBlock>,
 }
 
 #[derive(Deserialize, Serialize, Copy, Clone)]
@@ -82,6 +83,17 @@ impl LevelTheme {
     }
 }
 
+impl PlayableLevel {
+    pub fn block_hitbox(&self, x: usize, y: usize) -> Option<Hitbox> {
+        let block = self.blocks[y][x];
+        if block.block.is_collidable() {
+            Some(Block::hitbox(x, y))
+        } else {
+            None
+        }
+    }
+}
+
 impl Default for Level {
     fn default() -> Level {
         Level::new()
@@ -122,7 +134,7 @@ impl From<LevelJSON> for Level {
 
 impl From<Level> for PlayableLevel {
     fn from(lvl: Level) -> PlayableLevel {
-        let mut blocks : BlockArray<RealBlock> = Level::default_blocks();
+        let mut blocks: BlockArray<RealBlock> = Level::default_blocks();
 
         for (y, row) in lvl.blocks.iter().enumerate() {
             for (x, block) in row.iter().copied().enumerate() {

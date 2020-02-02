@@ -4,6 +4,7 @@ use crate::render::*;
 use crate::resource::*;
 use crate::utility::*;
 use crate::texture_id::*;
+use crate::hitbox::*;
 
 use serde::{Deserialize, Serialize};
 
@@ -21,14 +22,15 @@ pub struct Block {
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct RealBlock {
-    block: Block,
-    state: BlockState,
+    pub block: Block,
+    pub state: BlockState,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum BlockState {
     Static,
-    Bumped(u8),
+    Bumped,
+    Moving(u8),
 }
 
 #[derive(Copy, Clone)]
@@ -119,6 +121,12 @@ impl Default for Block {
 }
 
 impl Block {
+    pub fn hitbox(x: usize, y: usize) -> Hitbox {
+        let x = x as i32 * BLOCK_SIZE as i32;
+        let y = y as i32 * BLOCK_SIZE as i32;
+        rect!(x, y, BLOCK_SIZE, BLOCK_SIZE)
+    }
+
     pub fn default_visible() -> Self {
         Self::from(BlockType::Bricks)
     }
