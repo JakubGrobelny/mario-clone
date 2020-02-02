@@ -157,7 +157,7 @@ impl<T> Drawable for Button<T> {
 
         let (offset_x, offset_y) = data.position;
 
-        let mut rect = data.object.rect().clone();
+        let mut rect = *data.object.rect();
         let (width, height) = rect.size();
         let scaled_w = (width as f64 * data.scale) as u32;
         let scaled_h = (height as f64 * data.scale) as u32;

@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused)]
+
 extern crate num_traits;
 extern crate sdl2;
 extern crate serde_json;
@@ -12,6 +15,7 @@ mod background;
 mod block;
 mod controller;
 mod editor;
+mod enemy;
 mod entity;
 mod game;
 mod hitbox;

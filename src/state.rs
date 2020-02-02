@@ -200,7 +200,12 @@ impl GameState<'_> {
     fn update_activity(&mut self) {
         match &mut self.activity {
             Activity::Game(game) => {
-                game.update(&mut self.state);
+                if game.update(&mut self.state).exited() {
+                    replace(
+                        &mut self.activity,
+                        Activity::new_main_menu(&self.state.resources),
+                    );
+                }
             },
             activity @ Activity::FileInputScreen => {
                 let reading_text = self.state.text_input.is_active();

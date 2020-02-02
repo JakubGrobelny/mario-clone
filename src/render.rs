@@ -27,6 +27,7 @@ pub struct Camera {
     y: i32,
 }
 
+#[derive(Copy, Clone)]
 pub enum TextAlignment {
     Center,
     Left,
@@ -60,6 +61,7 @@ pub enum DrawMode {
     EditorSelection,
 }
 
+#[derive(Clone, Copy)]
 pub struct Text<'a> {
     text:      &'a str,
     alignment: TextAlignment,
@@ -320,7 +322,6 @@ impl<'a, T: Drawable> DrawCall<'a, T> {
         self.position.1 += shift.1;
         self
     }
-
 }
 
 impl Default for Camera {

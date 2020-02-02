@@ -2,6 +2,7 @@ use crate::background::*;
 use crate::block::*;
 use crate::render::*;
 use crate::resource::*;
+use crate::entity::*;
 
 use sdl2::pixels::Color;
 
@@ -17,6 +18,7 @@ pub struct Level {
     pub theme:  LevelTheme,
     blocks:     BlockArray<Block>,
     background: BlockArray<BackgroundElement>,
+    entities:   Vec<EntityPrototype>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -24,6 +26,7 @@ pub struct LevelJSON {
     theme:      LevelTheme,
     blocks:     Vec<Block>,
     background: Vec<BackgroundElement>,
+    entities:   Vec<EntityPrototype>,
 }
 
 #[derive(Deserialize, Serialize, Copy, Clone)]
@@ -48,6 +51,7 @@ impl From<&Level> for LevelJSON {
             theme: lvl.theme,
             blocks,
             background,
+            entities: lvl.entities.clone(),
         }
     }
 }
@@ -102,7 +106,8 @@ impl From<LevelJSON> for Level {
         Level {
             theme: json.theme,
             blocks,
-            background
+            background,
+            entities: json.entities,
         }
     }
 }
@@ -141,11 +146,13 @@ impl Level {
         const DEFAULT_THEME : LevelTheme = LevelTheme::Day;
         let blocks = Level::init_blocks();
         let background = Level::default_blocks();
+        let entities = Vec::new();
 
         Level {
             blocks,
             theme: DEFAULT_THEME,
             background,
+            entities,
         }
     }
 
