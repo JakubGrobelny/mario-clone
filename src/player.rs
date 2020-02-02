@@ -51,11 +51,11 @@ impl Player {
             Vector2D::new(accel_x, accel_y)
         }
 
-        self.physics.accelerate(convert_acceleration(controller));
+        self.physics.accelerate(false, convert_acceleration(controller));
     }
-
+    
     pub fn apply_speed(&mut self) {
-        self.position = self.physics.apply_movement(self.position);
+        self.position = self.physics.apply_speed(self.position);
     }
 
     pub fn position(&self) -> (i32, i32) {

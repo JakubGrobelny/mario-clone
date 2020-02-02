@@ -11,6 +11,8 @@ extern crate num_derive;
 mod utility;
 #[macro_use]
 mod render;
+#[macro_use]
+mod physics;
 mod background;
 mod block;
 mod controller;
@@ -22,7 +24,7 @@ mod hitbox;
 mod interface;
 mod level;
 mod menu;
-mod physics;
+mod movement;
 mod player;
 mod resource;
 mod state;
