@@ -48,7 +48,7 @@ impl Game {
     }
 
     pub fn new(res: &ResourceManager) -> Game {
-        let player = Player::new(0, 0);
+        let player = Player::new(10, SCREEN_HEIGHT as i32 - 70);
         let camera = Camera::new(player.rect().x(), player.rect().y());
         let buttons = ButtonColumnBuilder::new()
             .add(("RESUME", ButtonEffect::Resume))

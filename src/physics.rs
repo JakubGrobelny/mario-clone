@@ -58,6 +58,23 @@ impl PhysicalBody {
     pub fn position(&self) -> (i32, i32) {
         (self.hitbox.x(), self.hitbox.y())
     }
+
+    pub fn stop_x(&mut self) {
+        self.physics.speed.x = 0.0;
+    }
+
+    pub fn stop_y(&mut self) {
+        self.physics.speed.y = 0.0;
+    }
+    pub fn clear_speed(&mut self) {
+        const CLEAR_THRESHOLD: f64 = 0.2;
+        let speed = self.physics.speed;
+        self.physics.speed =
+            vec_map(
+                &speed,
+                |x| if x.abs() < CLEAR_THRESHOLD { 0.0 } else { x },
+            );
+    }
 }
 
 const GRAVITY: f64 = 1.0;
@@ -80,16 +97,15 @@ impl Physics {
         let grav_accel =
             vec2d!(0.0, if ground { 0.0 } else { self.mass * GRAVITY });
 
-        let drag = self.speed.mul_components(
-            AIR_DRAG_VEC
-                + if ground {
-                    GROUND_DRAG_VEC
-                } else {
-                    vec2d!(0.0, 0.0)
-                },
-        );
+        let drag_x = if ground {
+            GROUND_DRAG_VEC
+        } else {
+            vec2d!(0.0, 0.0)
+        };
 
-        self.speed = self.speed + accel + grav_accel - drag;
+        let drag = self.speed.mul_components(drag_x + AIR_DRAG_VEC);
+
+        self.speed += accel + grav_accel - drag;
     }
 }
 
