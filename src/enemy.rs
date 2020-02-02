@@ -4,8 +4,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Serialize)]
 #[derive(Copy, Clone)]
 pub enum EnemyType {
-    Koopa,
     Goomba,
+    Koopa,
+    EmptyShell,
+    PiranhaPlant,
+    FlyingKoopa,
     BuzzyBeetle,
     Spiny,
     HammerBro,

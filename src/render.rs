@@ -335,9 +335,10 @@ impl Camera {
         Camera { x, y }
     }
 
-    pub fn move_to(&mut self, (x,y): (i32, i32)) {
-        self.x = x;
-        self.y = y;
+    pub fn move_to(&mut self, pos: (i32, i32)) {
+        self.x = 0;
+        self.y = 0;
+        self.shift(pos);
     }
 
     pub fn shift(&mut self, amount: (i32, i32)) {

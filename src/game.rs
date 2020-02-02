@@ -13,14 +13,14 @@ pub struct Game {
     player:     Player,
     score:      Score,
     level_info: LevelInfo,
+    level:      PlayableLevel,
     state:      State,
     menu:       ButtonColumn<ButtonEffect>,
 }
 
 struct LevelInfo {
-    current:   usize,
-    list:      Vec<String>,
-    prototype: Level,
+    current: usize,
+    list:    Vec<String>,
 }
 
 #[derive(Clone, Copy)]
@@ -56,6 +56,7 @@ impl Game {
             .build();
 
         let level_info = LevelInfo::new(res);
+        let level = level_info.load_level(res);
 
         Game {
             player,
@@ -64,6 +65,7 @@ impl Game {
             state: Self::new_level_loading_screen(),
             menu: buttons,
             level_info,
+            level,
         }
     }
 
@@ -95,6 +97,11 @@ impl Game {
             State::Running => {
                 self.player.accelerate(&state.controller);
                 self.player.apply_speed();
+                let (player_x, player_y) = self.player.position();
+                self.camera.move_to((
+                    player_x - SCREEN_WIDTH as i32 / 2,
+                    player_y - SCREEN_HEIGHT as i32 / 2,
+                ))
             },
             State::LevelLoading(0) => {
                 self.state = State::Running;
@@ -148,8 +155,10 @@ impl Game {
     }
 
     pub fn draw(&self, renderer: &mut Renderer, state: &mut SharedState) {
-        // TODO: draw level
-        renderer.clear(Color::RGB(88, 100, 255));
+        renderer
+            .draw(&self.level)
+            .camera(self.camera)
+            .show(&mut state.resources);
 
         match self.state {
             State::Paused => {
@@ -190,12 +199,11 @@ impl LevelInfo {
             );
         }
 
-        let prototype = res.load_existing_level(&list[0]);
+        LevelInfo { list, current: 0 }
+    }
 
-        LevelInfo {
-            list,
-            prototype,
-            current: 0,
-        }
+    pub fn load_level(&self, res: &ResourceManager) -> PlayableLevel {
+        let prototype = res.load_existing_level(&self.list[self.current]);
+        PlayableLevel::from(prototype)
     }
 }

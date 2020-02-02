@@ -42,8 +42,10 @@ impl Editor {
             .add(("MENU", ButtonEffect::Menu))
             .build();
 
+        let cam_y = LEVEL_HEIGHT as u32 * BLOCK_SIZE - SCREEN_HEIGHT;
+
         Editor {
-            camera: Camera::default(),
+            camera: Camera::new(0, cam_y as i32),
             paused: false,
             level,
             level_name: String::from(name),

@@ -26,6 +26,7 @@ mod physics;
 mod player;
 mod resource;
 mod state;
+mod texture_id;
 
 use render::*;
 use resource::*;

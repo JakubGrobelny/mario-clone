@@ -3,6 +3,7 @@ use crate::level::*;
 use crate::render::*;
 use crate::resource::*;
 use crate::utility::*;
+use crate::texture_id::*;
 
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +17,18 @@ pub const BLOCK_SIZE: u32 = 64;
 pub struct Block {
     kind:     BlockType,
     contents: Option<Collectible>,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub struct RealBlock {
+    block: Block,
+    state: BlockState,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub enum BlockState {
+    Static,
+    Bumped(u8),
 }
 
 #[derive(Copy, Clone)]
@@ -71,6 +84,24 @@ pub enum Collectible {
 }
 
 const MAX_BLOCK: u8 = BlockType::Air as u8;
+
+impl From<Block> for RealBlock {
+    fn from(block: Block) -> Self {
+        RealBlock {
+            block,
+            state: BlockState::Static,
+        }
+    }
+}
+
+impl Default for RealBlock {
+    fn default() -> Self {
+        RealBlock {
+            block: Block::default(),
+            state: BlockState::Static,
+        }
+    }
+}
 
 impl From<BlockType> for Block {
     fn from(block_type: BlockType) -> Block {
@@ -252,13 +283,13 @@ impl Drawable for Collectible {
     fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
         let info = match data.object {
             Collectible::Coins(..) => {
-                res.entity_texture_info(EntityTextureId::CollectibleCoin)
+                res.entity_texture_info(TextureId::CollectibleCoin)
             },
             Collectible::Flower => {
-                res.entity_texture_info(EntityTextureId::CollectibleFlower)
+                res.entity_texture_info(TextureId::CollectibleFlower)
             },
             Collectible::Mushroom => {
-                res.entity_texture_info(EntityTextureId::CollectibleMushroom)
+                res.entity_texture_info(TextureId::CollectibleMushroom)
             },
         };
 

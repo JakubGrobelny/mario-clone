@@ -1,8 +1,8 @@
 use crate::background::*;
 use crate::block::*;
+use crate::entity::*;
 use crate::render::*;
 use crate::resource::*;
-use crate::entity::*;
 
 use sdl2::pixels::Color;
 
@@ -15,10 +15,10 @@ pub type BlockArray<T> = Box<[[T; LEVEL_WIDTH]; LEVEL_HEIGHT]>;
 
 #[derive(Clone)]
 pub struct Level {
-    pub theme:  LevelTheme,
-    blocks:     BlockArray<Block>,
+    pub theme: LevelTheme,
+    blocks: BlockArray<Block>,
     background: BlockArray<BackgroundElement>,
-    entities:   Vec<EntityPrototype>,
+    entities: Vec<EntityPrototype>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -29,6 +29,11 @@ pub struct LevelJSON {
     entities:   Vec<EntityPrototype>,
 }
 
+pub struct PlayableLevel {
+    prototype: Level,
+    blocks: BlockArray<RealBlock>,
+}
+
 #[derive(Deserialize, Serialize, Copy, Clone)]
 #[repr(u8)]
 pub enum LevelTheme {
@@ -37,13 +42,16 @@ pub enum LevelTheme {
     Night,
 }
 
-
 impl From<&Level> for LevelJSON {
     fn from(lvl: &Level) -> LevelJSON {
         fn array_to_vec<T: Copy>(array: &BlockArray<T>) -> Vec<T> {
-            array.iter().map(|row| row.iter()).flatten().copied().collect()
+            array
+                .iter()
+                .map(|row| row.iter())
+                .flatten()
+                .copied()
+                .collect()
         }
-        
         let blocks = array_to_vec(&lvl.blocks);
         let background = array_to_vec(&lvl.background);
 
@@ -112,6 +120,22 @@ impl From<LevelJSON> for Level {
     }
 }
 
+impl From<Level> for PlayableLevel {
+    fn from(lvl: Level) -> PlayableLevel {
+        let mut blocks : BlockArray<RealBlock> = Level::default_blocks();
+
+        for (y, row) in lvl.blocks.iter().enumerate() {
+            for (x, block) in row.iter().copied().enumerate() {
+                blocks[y][x] = RealBlock::from(block);
+            }
+        }
+
+        PlayableLevel {
+            blocks,
+            prototype: lvl,
+        }
+    }
+}
 
 impl Level {
     fn default_blocks<T: Default + Copy>() -> BlockArray<T> {
@@ -120,7 +144,6 @@ impl Level {
 
     fn init_blocks() -> BlockArray<Block> {
         let mut blocks = Level::default_blocks();
-    
         blocks[LEVEL_HEIGHT - 2][0] = Block::from(BlockType::GroundLeft);
         blocks[LEVEL_HEIGHT - 2][LEVEL_WIDTH - 1] =
             Block::from(BlockType::GroundRight);
@@ -143,7 +166,7 @@ impl Level {
     }
 
     pub fn new() -> Level {
-        const DEFAULT_THEME : LevelTheme = LevelTheme::Day;
+        const DEFAULT_THEME: LevelTheme = LevelTheme::Day;
         let blocks = Level::init_blocks();
         let background = Level::default_blocks();
         let entities = Vec::new();
@@ -197,6 +220,19 @@ impl Drawable for Level {
         data.renderer.canvas.set_draw_color(color);
         data.renderer.canvas.clear();
 
+        for (y, row) in data.object.background.iter().enumerate() {
+            for (x, &bg) in row.iter().enumerate() {
+                let x = x as i32 * BLOCK_SIZE as i32;
+                let y = y as i32 * BLOCK_SIZE as i32;
+                let themed_bg = ThemedBackgroundElement {
+                    element: bg,
+                    theme:   data.object.theme,
+                };
+
+                pass_draw!(data, &themed_bg).position((x, y)).show(res);
+            }
+        }
+
         for (y, row) in data.object.blocks.iter().enumerate() {
             for (x, &block) in row.iter().enumerate() {
                 let x = x as i32 * BLOCK_SIZE as i32;
@@ -210,17 +246,13 @@ impl Drawable for Level {
             }
         }
 
-        for (y, row) in data.object.background.iter().enumerate() {
-            for (x, &bg) in row.iter().enumerate() {
-                let x = x as i32 * BLOCK_SIZE as i32;
-                let y = y as i32 * BLOCK_SIZE as i32;
-                let themed_bg = ThemedBackgroundElement {
-                    element: bg,
-                    theme: data.object.theme
-                };
-                
-                pass_draw!(data, &themed_bg).position((x,y)).show(res);
-            }
-        }
+        // TODO: draw entity prototypes if mode is editor
+    }
+}
+
+impl Drawable for PlayableLevel {
+    fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
+        pass_draw!(data, &data.object.prototype).show(res);
+        // TODO: draw the rest of the level
     }
 }

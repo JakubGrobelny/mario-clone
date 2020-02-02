@@ -16,6 +16,7 @@ use crate::background::*;
 use crate::block::*;
 use crate::entity::*;
 use crate::level::*;
+use crate::texture_id::*;
 use crate::utility::*;
 
 pub struct ResourceManager<'a> {
@@ -53,7 +54,7 @@ pub struct TextureAnimation {
 struct TexturePaths {
     blocks:     HashMap<BlockType, TextureInfo>,
     background: HashMap<BackgroundElement, TextureInfo>,
-    entities:   HashMap<EntityTextureId, TextureInfo>,
+    entities:   HashMap<TextureId, TextureInfo>,
 }
 
 pub struct ResourceCache<'a, Key, Resource, Loader>
@@ -164,7 +165,7 @@ impl ResourceManager<'_> {
         Self::texture_info(&self.texture_info.blocks, &block.kind())
     }
 
-    pub fn entity_texture_info(&self, entity: EntityTextureId) -> &TextureInfo {
+    pub fn entity_texture_info(&self, entity: TextureId) -> &TextureInfo {
         Self::texture_info(&self.texture_info.entities, &entity)
     }
 
