@@ -148,7 +148,7 @@ impl Drawable for Rect {
         ];
         data.camera.move_rect(&mut rect);
 
-        data.renderer.canvas.set_draw_color(Color::RGB(255, 0, 0));
+        data.renderer.canvas.set_draw_color(Color::RGB(255, 255, 255));
         data.renderer
             .canvas
             .fill_rect(rect)
@@ -333,6 +333,11 @@ impl Default for Camera {
 impl Camera {
     pub fn new(x: i32, y: i32) -> Camera {
         Camera { x, y }
+    }
+
+    pub fn move_to(&mut self, (x,y): (i32, i32)) {
+        self.x = x;
+        self.y = y;
     }
 
     pub fn shift(&mut self, amount: (i32, i32)) {

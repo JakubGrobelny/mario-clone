@@ -1,5 +1,6 @@
 use crate::controller::*;
 use crate::interface::*;
+use crate::level::*;
 use crate::player::*;
 use crate::render::*;
 use crate::resource::*;
@@ -8,13 +9,18 @@ use crate::state::*;
 use sdl2::pixels::Color;
 
 pub struct Game {
-    player:        Player,
-    score:         Score,
-    level_list:    Vec<String>,
-    current_level: usize,
-    camera:        Camera,
-    state:         State,
-    menu:          ButtonColumn<ButtonEffect>,
+    camera:     Camera,
+    player:     Player,
+    score:      Score,
+    level_info: LevelInfo,
+    state:      State,
+    menu:       ButtonColumn<ButtonEffect>,
+}
+
+struct LevelInfo {
+    current:   usize,
+    list:      Vec<String>,
+    prototype: Level,
 }
 
 #[derive(Clone, Copy)]
@@ -23,6 +29,8 @@ enum State {
     LevelLoading(u8),
     Running,
 }
+
+const LOADING_SCREEN_TIME: u8 = FPS as u8 * 2;
 
 enum ButtonEffect {
     Resume,
@@ -34,17 +42,11 @@ pub struct Score {
     coins: u32,
 }
 
-impl Score {
-    pub fn new() -> Score {
-        Score { lives: 3, coins: 0 }
-    }
-}
-
 impl Game {
     fn new_level_loading_screen() -> State {
-        const SECONDS: u8 = 2;
-        State::LevelLoading(SECONDS * FPS as u8)
+        State::LevelLoading(LOADING_SCREEN_TIME)
     }
+
     pub fn new(res: &ResourceManager) -> Game {
         let player = Player::new(0, 0);
         let camera = Camera::new(player.x(), player.y());
@@ -53,23 +55,15 @@ impl Game {
             .add(("MENU", ButtonEffect::Menu))
             .build();
 
-        let level_list = res.load_level_list();
-        if level_list.is_empty() {
-            panic_with_messagebox!(
-                "Error: no levels specified in the levels.json file!"
-            );
-        }
-
-        let first_level = res.load_level(&level_list[0]);
+        let level_info = LevelInfo::new(res);
 
         Game {
-            current_level: 0,
             player,
             camera,
             score: Score::new(),
             state: Self::new_level_loading_screen(),
             menu: buttons,
-            level_list,
+            level_info,
         }
     }
 
@@ -119,7 +113,22 @@ impl Game {
         state: &mut SharedState,
     ) {
         renderer.clear(Color::RGB(0, 0, 0));
-        let level_text = centered_text!(&self.level_list[self.current_level]);
+        let level_text =
+            centered_text!(&self.level_info.list[self.level_info.current]);
+
+        let time = match self.state {
+            State::LevelLoading(time) => time,
+            _ => {
+                panic!(
+                    "Drawing loading screen despite being in different state!"
+                )
+            },
+        };
+        let progress = ((time as f64 / LOADING_SCREEN_TIME as f64)
+            * SCREEN_WIDTH as f64) as u32;
+        let progress_bar = rect!(0, 0, SCREEN_WIDTH - progress, 10);
+        renderer.draw(&progress_bar).show(&mut state.resources);
+
         // TODO: display the actual coin icon
         let score_str =
             format!("Lives: {} Coins: {}", self.score.lives, self.score.coins);
@@ -162,6 +171,31 @@ impl Game {
                     .camera(self.camera)
                     .show(&mut state.resources);
             },
+        }
+    }
+}
+
+impl Score {
+    pub fn new() -> Score {
+        Score { lives: 3, coins: 0 }
+    }
+}
+
+impl LevelInfo {
+    pub fn new(res: &ResourceManager) -> LevelInfo {
+        let list = res.load_level_list();
+        if list.is_empty() {
+            panic_with_messagebox!(
+                "Error: no levels specified in the levels.json file!"
+            );
+        }
+
+        let prototype = res.load_existing_level(&list[0]);
+
+        LevelInfo {
+            list,
+            prototype,
+            current: 0,
         }
     }
 }
