@@ -82,7 +82,7 @@ pub struct ThemedBlock {
 pub enum Collectible {
     Coins(u8),
     Mushroom,
-    Flower,
+    Star,
 }
 
 const MAX_BLOCK: u8 = BlockType::Air as u8;
@@ -273,15 +273,15 @@ impl Collectible {
     pub fn next(self) -> Self {
         match self {
             Collectible::Coins(_) => Collectible::Mushroom,
-            Collectible::Mushroom => Collectible::Flower,
-            Collectible::Flower => Collectible::Coins(1),
+            Collectible::Mushroom => Collectible::Star,
+            Collectible::Star => Collectible::Coins(1),
         }
     }
 
     pub fn prev(self) -> Self {
         match self {
-            Collectible::Coins(_) => Collectible::Flower,
-            Collectible::Flower => Collectible::Mushroom,
+            Collectible::Coins(_) => Collectible::Star,
+            Collectible::Star => Collectible::Mushroom,
             Collectible::Mushroom => Collectible::Coins(1),
         }
     }
@@ -293,7 +293,7 @@ impl Drawable for Collectible {
             Collectible::Coins(..) => {
                 res.entity_texture_info(TextureId::CollectibleCoin)
             },
-            Collectible::Flower => {
+            Collectible::Star => {
                 res.entity_texture_info(TextureId::CollectibleFlower)
             },
             Collectible::Mushroom => {

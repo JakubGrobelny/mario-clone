@@ -4,5 +4,6 @@ use serde::{Deserialize};
 pub enum TextureId {
     CollectibleCoin,
     CollectibleMushroom,
+    CollectibleStar,
     CollectibleFlower,
 }
