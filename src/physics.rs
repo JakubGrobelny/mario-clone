@@ -1,10 +1,48 @@
 extern crate vector2d;
 use vector2d::Vector2D;
 
+use crate::hitbox::*;
+
 #[derive(Debug)]
 pub struct Physics {
     mass:  f64,
     speed: Vector2D<f64>,
+}
+
+pub struct PhysicalBody {
+    physics:  Physics,
+    pub hitbox:   Hitbox,
+    pub grounded: bool,
+}
+
+
+impl PhysicalBody {
+    pub fn new(mass: f64, hitbox: Hitbox) -> Self {
+        PhysicalBody {
+            physics: Physics::new(mass),
+            hitbox,
+            grounded: false,
+        }
+    }
+
+    pub fn accelerate(&mut self, accel: Vector2D<f64>) {
+        self.physics.accelerate(self.grounded, accel);
+    }
+
+    pub fn apply_speed(&mut self) {
+        let x = self.physics.speed.x.round() as i32;
+        let y = self.physics.speed.y.round() as i32;
+
+        self.hitbox.offset(x, y)
+    }
+
+    pub fn speed_y(&self) -> f64 {
+        self.physics.speed.y
+    }
+
+    pub fn speed_x(&self) -> f64 {
+        self.physics.speed.x
+    }
 }
 
 #[macro_export]
@@ -23,14 +61,14 @@ const GROUND_DRAG: f64 = 0.15;
 const GROUND_DRAG_VEC: Vector2D<f64> = vec2d!(GROUND_DRAG, 0.0);
 
 impl Physics {
-    pub fn new(mass: f64) -> Physics {
+    fn new(mass: f64) -> Physics {
         Physics {
             mass,
             speed: vec2d!(0.0, 0.0),
         }
     }
 
-    pub fn accelerate(&mut self, ground: bool, accel: Vector2D<f64>) {
+    fn accelerate(&mut self, ground: bool, accel: Vector2D<f64>) {
         let grav_accel =
             vec2d!(0.0, if ground { 0.0 } else { self.mass * GRAVITY });
 
@@ -44,11 +82,5 @@ impl Physics {
         );
 
         self.speed = self.speed + accel + grav_accel - drag;
-    }
-
-    pub fn apply_speed(&self, position: (i32, i32)) -> (i32, i32) {
-        let x_shift = self.speed.x.round() as i32;
-        let y_shift = self.speed.y.round() as i32;
-        (position.0 + x_shift, position.1 + y_shift)
     }
 }

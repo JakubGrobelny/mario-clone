@@ -3,6 +3,8 @@ use crate::render::*;
 use std::error::Error;
 use std::path::PathBuf;
 
+use sdl2::rect::Rect;
+
 pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 pub struct Frequency {

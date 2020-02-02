@@ -215,6 +215,16 @@ impl Controller {
         self.mouse.was_button_pressed(button)
     }
 
+    pub fn x_acceleration(&self) -> f64 {
+        if self.is_key_active(Key::Left) {
+            -1.0
+        } else if self.is_key_active(Key::Right) {
+            1.0
+        } else {
+            0.0
+        }
+    }
+
     pub fn clear_mouse(&mut self) {
         for button in self.mouse.buttons.iter_mut() {
             *button = ButtonState::Inactive;

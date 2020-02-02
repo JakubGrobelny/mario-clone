@@ -49,7 +49,7 @@ impl Game {
 
     pub fn new(res: &ResourceManager) -> Game {
         let player = Player::new(0, 0);
-        let camera = Camera::new(player.x(), player.y());
+        let camera = Camera::new(player.rect().x(), player.rect().y());
         let buttons = ButtonColumnBuilder::new()
             .add(("RESUME", ButtonEffect::Resume))
             .add(("MENU", ButtonEffect::Menu))
@@ -97,11 +97,7 @@ impl Game {
             State::Running => {
                 self.player.accelerate(&state.controller);
                 self.player.apply_speed();
-                let (player_x, player_y) = self.player.position();
-                self.camera.move_to((
-                    player_x - SCREEN_WIDTH as i32 / 2,
-                    player_y - SCREEN_HEIGHT as i32 / 2,
-                ))
+                self.player.stick_camera(&mut self.camera);
             },
             State::LevelLoading(0) => {
                 self.state = State::Running;
@@ -169,14 +165,8 @@ impl Game {
                 self.draw_loading_screen(renderer, state);
             },
             State::Running => {
-                let player_rect = rect!(
-                    self.player.x(),
-                    self.player.y(),
-                    PLAYER_WIDTH,
-                    PLAYER_HEIGHT
-                );
                 renderer
-                    .draw(&player_rect)
+                    .draw(&self.player.rect())
                     .camera(self.camera)
                     .show(&mut state.resources);
             },

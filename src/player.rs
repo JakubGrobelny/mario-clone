@@ -10,63 +10,71 @@ use sdl2::rect::Rect;
 
 use vector2d::Vector2D;
 
-#[derive(Debug)]
 pub struct Player {
-    position: (i32, i32),
-    physics:  Physics,
-    hitbox:   Hitbox,
+    body:    PhysicalBody,
+    variant: PlayerVariant,
 }
 
 const PLAYER_MASS: f64 = 1.0;
-pub const PLAYER_WIDTH: u32 = 50;
-pub const PLAYER_HEIGHT: u32 = 100;
+pub const PLAYER_WIDTH: u32 = 40;
+pub const PLAYER_HEIGHT: u32 = 50;
+
+pub enum PlayerVariant {
+    Small,
+    Big,
+    CanShoot,
+}
 
 impl Player {
     pub fn new(x: i32, y: i32) -> Player {
+        let hitbox = Hitbox::new(x, y, PLAYER_WIDTH, PLAYER_HEIGHT);
+        let mass = 1.0;
+
         Player {
-            position: (x, y),
-            physics:  Physics::new(PLAYER_MASS),
-            hitbox:   Hitbox::new(x, y, PLAYER_WIDTH, PLAYER_HEIGHT),
+            body:    PhysicalBody::new(mass, hitbox),
+            variant: PlayerVariant::Small,
         }
     }
 
     pub fn accelerate(&mut self, controller: &Controller) {
-        fn convert_acceleration(controller: &Controller) -> Vector2D<f64> {
-            let accel_x = if controller.is_key_active(Key::Left) {
-                -1.0
-            } else if controller.is_key_active(Key::Right) {
-                1.0
-            } else {
-                0.0
-            };
+        const HORIZONTAL_ACCELERATION: f64 = 1.1;
+        const AIRBORNE_HANDICAP: f64 = 0.4;
+        const JUMP_ACCELERATION: f64 = -10.0;
+        const LONG_JUMP_MULT: f64 = 0.1;
+        const SPRINT_MULT: f64 = 1.35;
+        const SPEED_JUMP_BONUS: f64 = 0.02;
 
-            let accel_y = if controller.is_key_active(Key::Up) {
-                -1.0
-            } else if controller.is_key_active(Key::Down) {
-                1.0
-            } else {
-                0.0
-            };
-
-            Vector2D::new(accel_x, accel_y)
+        let mut x_accel = HORIZONTAL_ACCELERATION * controller.x_acceleration();
+        if self.body.grounded {
+            x_accel *= AIRBORNE_HANDICAP;
         }
 
-        self.physics.accelerate(false, convert_acceleration(controller));
+        let jumps = controller.is_key_active(Key::Up) && self.body.grounded;
+        let jumping = controller.is_key_active(Key::Up);
+        let y_accel = if jumping && self.body.speed_y() < 0.0 {
+            self.body.speed_y() * LONG_JUMP_MULT
+        } else if self.body.grounded && jumping {
+            JUMP_ACCELERATION
+        } else {
+            0.0
+        };
+
+        let boosted_y_accel = y_accel * x_accel * SPEED_JUMP_BONUS;
+        let accel = vec2d!(x_accel, boosted_y_accel);
+        self.body.accelerate(accel);
     }
-    
+
+    pub fn rect(&self) -> Rect {
+        self.body.hitbox
+    }
+
     pub fn apply_speed(&mut self) {
-        self.position = self.physics.apply_speed(self.position);
+        self.body.apply_speed();
     }
 
-    pub fn position(&self) -> (i32, i32) {
-        self.position
-    }
-
-    pub fn x(&self) -> i32 {
-        self.position.0
-    }
-
-    pub fn y(&self) -> i32 {
-        self.position.1
+    pub fn stick_camera(&self, cam: &mut Camera) {
+        let x = self.body.hitbox.x() - SCREEN_WIDTH as i32 / 2;
+        let y = self.body.hitbox.y() - SCREEN_HEIGHT as i32 / 2;
+        cam.move_to((x, y));
     }
 }

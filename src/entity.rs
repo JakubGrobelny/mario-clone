@@ -1,8 +1,10 @@
 use crate::block::*;
 use crate::hitbox::*;
 use crate::enemy::*;
+use crate::physics::*;
 
 use sdl2::render::Texture;
+use sdl2::rect::Rect;
 
 use serde::{Deserialize, Serialize};
 
@@ -21,4 +23,14 @@ pub struct EntityPrototype {
 pub enum EntityType {
     Collectible(Collectible),
     Enemy(EnemyType)
+}
+
+pub struct PhysicalBody {
+    physics: Physics,
+    hitbox: Rect,
+    grounded: bool,
+}
+
+impl PhysicalBody {
+
 }
