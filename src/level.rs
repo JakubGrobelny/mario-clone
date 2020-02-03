@@ -1,9 +1,9 @@
 use crate::background::*;
 use crate::block::*;
 use crate::entity::*;
+use crate::hitbox::*;
 use crate::render::*;
 use crate::resource::*;
-use crate::hitbox::*;
 
 use sdl2::pixels::Color;
 
@@ -32,11 +32,14 @@ pub struct LevelJSON {
 
 #[derive(Clone)]
 pub struct PlayableLevel {
-    pub prototype:  Level,
-    pub blocks: BlockArray<RealBlock>,
+    pub prototype: Level,
+    pub blocks:    BlockArray<RealBlock>,
+    pub entities:  Vec<Entity>,
 }
 
-#[derive(Deserialize, Serialize, Copy, Clone)]
+#[derive(Deserialize, Serialize)]
+#[derive(Copy, Clone)]
+#[derive(Debug)]
 #[repr(u8)]
 pub enum LevelTheme {
     Day,
@@ -143,9 +146,17 @@ impl From<Level> for PlayableLevel {
             }
         }
 
+        let entities = lvl
+            .entities
+            .iter()
+            .copied()
+            .map(Entity::from)
+            .collect();
+
         PlayableLevel {
             blocks,
             prototype: lvl,
+            entities,
         }
     }
 }
@@ -255,7 +266,6 @@ impl Drawable for Level {
                         block,
                         theme: data.object.theme,
                     };
-    
                     pass_draw!(data, &block).position((x, y)).show(res);
                 }
             }
@@ -286,6 +296,10 @@ impl Drawable for PlayableLevel {
 
                 pass_draw!(data, &block).position((x, y)).show(res);
             }
+        }
+
+        for entity in data.object.entities.iter() {
+            pass_draw!(data, entity).show(res);
         }
     }
 }

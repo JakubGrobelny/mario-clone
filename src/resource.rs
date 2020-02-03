@@ -163,8 +163,8 @@ impl ResourceManager<'_> {
             .unwrap()
     }
 
-    pub fn block_texture_info(&self, block: Block) -> &TextureInfo {
-        Self::texture_info(&self.texture_info.blocks, &block.kind())
+    pub fn block_texture_info(&self, block: BlockType) -> &TextureInfo {
+        Self::texture_info(&self.texture_info.blocks, &block)
     }
 
     pub fn entity_texture_info(&self, entity: TextureId) -> &TextureInfo {

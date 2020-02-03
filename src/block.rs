@@ -1,12 +1,15 @@
 use crate::entity::*;
+use crate::entity::*;
+use crate::hitbox::*;
 use crate::level::*;
 use crate::render::*;
 use crate::resource::*;
-use crate::utility::*;
 use crate::texture_id::*;
-use crate::hitbox::*;
+use crate::utility::*;
 
 use serde::{Deserialize, Serialize};
+
+use rand::Rng;
 
 use num_traits::FromPrimitive;
 
@@ -83,6 +86,7 @@ pub enum Collectible {
     Coins(u8),
     Mushroom,
     Star,
+    Flower,
 }
 
 const MAX_BLOCK: u8 = BlockType::Air as u8;
@@ -201,6 +205,31 @@ impl Default for BlockType {
     }
 }
 
+impl RealBlock {
+    pub fn spawn_particles(
+        self,
+        theme: LevelTheme,
+        (x, y): (usize, usize),
+        entities: &mut Vec<Entity>,
+    ) {
+        const NUM_PARTICLES: usize = 4;
+        let particle = EntityType::Particle(Particle::new_fragment(
+            self.block.kind,
+            theme,
+        ));
+
+        let mut rng = rand::thread_rng();
+
+        entities.extend((0..NUM_PARTICLES).map(|_| {
+            let mut entity = Entity::spawn(particle, (x, y));
+            let x = rng.gen_range(-3.0, 3.0);
+            let y = rng.gen_range(-10.0, -5.0);
+            entity.body.accelerate(vec2d!(x, y));
+            entity
+        }));
+    }
+}
+
 impl BlockType {
     fn next(self) -> BlockType {
         let next_id = (self as u8 + 1) % MAX_BLOCK;
@@ -238,9 +267,9 @@ impl Drawable for ThemedBlock {
         }
 
         let (src_region, dest, path) = {
-            let info = res.block_texture_info(block);
-            
-            let (x, y) = data.position;            
+            let info = res.block_texture_info(block.kind);
+
+            let (x, y) = data.position;
             let width = (info.width as f64 * data.scale) as u32;
             let height = (info.height as f64 * data.scale) as u32;
             if !data.camera.in_view(rect!(x, y, width, height)) {
@@ -266,7 +295,7 @@ impl Drawable for ThemedBlock {
         data.renderer
             .canvas
             .copy(&res.texture(&path), src_region, dest)
-            .unwrap();
+            .expect("Failed to draw a block!");
 
         if data.mode == DrawMode::Editor && !block.is_empty() {
             pass_draw!(data, &block.contents.unwrap()).show(res);
@@ -280,6 +309,7 @@ impl Collectible {
             Collectible::Coins(_) => Collectible::Mushroom,
             Collectible::Mushroom => Collectible::Star,
             Collectible::Star => Collectible::Coins(1),
+            Collectible::Flower => Collectible::Coins(1),
         }
     }
 
@@ -288,23 +318,24 @@ impl Collectible {
             Collectible::Coins(_) => Collectible::Star,
             Collectible::Star => Collectible::Mushroom,
             Collectible::Mushroom => Collectible::Coins(1),
+            Collectible::Flower => Collectible::Coins(1),
+        }
+    }
+
+    pub fn texture_id(self) -> TextureId {
+        match self {
+            Collectible::Coins(..) => TextureId::CollectibleCoin,
+            Collectible::Star => TextureId::CollectibleStar,
+            Collectible::Mushroom => TextureId::CollectibleMushroom,
+            Collectible::Flower => TextureId::CollectibleFlower,
         }
     }
 }
 
 impl Drawable for Collectible {
     fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
-        let info = match data.object {
-            Collectible::Coins(..) => {
-                res.entity_texture_info(TextureId::CollectibleCoin)
-            },
-            Collectible::Star => {
-                res.entity_texture_info(TextureId::CollectibleStar)
-            },
-            Collectible::Mushroom => {
-                res.entity_texture_info(TextureId::CollectibleMushroom)
-            },
-        };
+        let texture_id = data.object.texture_id();
+        let info = res.entity_texture_info(texture_id);
 
         let (x, y) = data.position;
         let width = (info.width as f64 * data.scale) as u32;

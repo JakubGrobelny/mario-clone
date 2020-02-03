@@ -71,7 +71,7 @@ macro_rules! rect {
 #[macro_export]
 macro_rules! vec2d {
     ($x:expr, $y:expr) => {
-        Vector2D { x: $x, y: $y }
+        vector2d::Vector2D { x: $x, y: $y }
     };
 }
 

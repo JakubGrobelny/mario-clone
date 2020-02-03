@@ -1,15 +1,20 @@
 extern crate vector2d;
 use vector2d::Vector2D;
 
+use crate::block::*;
 use crate::hitbox::*;
+use crate::level::*;
 use crate::utility::*;
 
 #[derive(Debug)]
+#[derive(Clone, Copy)]
 pub struct Physics {
     mass:  f64,
     speed: Vector2D<f64>,
 }
 
+#[derive(Debug)]
+#[derive(Clone, Copy)]
 pub struct PhysicalBody {
     physics:       Physics,
     pub hitbox:    Hitbox,
@@ -25,6 +30,16 @@ impl PhysicalBody {
             grounded: false,
             direction: XDirection::Still,
         }
+    }
+
+    pub fn out_of_bounds(&self) -> bool {
+        let world: Hitbox = rect!(
+            0,
+            0,
+            LEVEL_WIDTH * BLOCK_SIZE as usize,
+            LEVEL_HEIGHT * BLOCK_SIZE as usize
+        );
+        !self.hitbox.collides(&world)
     }
 
     pub fn is_still_x(&self) -> bool {
@@ -87,6 +102,11 @@ impl PhysicalBody {
                 &speed,
                 |x| if x.abs() < CLEAR_THRESHOLD { 0.0 } else { x },
             );
+    }
+
+    pub fn apply_movement_unchecked(&mut self) {
+        let Vector2D { x, y } = self.physics.speed;
+        self.hitbox.offset(x.round() as i32, y.round() as i32);
     }
 }
 

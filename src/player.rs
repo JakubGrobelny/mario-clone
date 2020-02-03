@@ -15,7 +15,7 @@ use vector2d::Vector2D;
 
 pub struct Player {
     body:    PhysicalBody,
-    variant: PlayerVariant,
+    pub variant: PlayerVariant,
 }
 
 const PLAYER_MASS: f64 = 1.0;

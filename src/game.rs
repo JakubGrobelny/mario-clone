@@ -1,5 +1,6 @@
 use crate::block::*;
 use crate::controller::*;
+use crate::entity::*;
 use crate::interface::*;
 use crate::level::*;
 use crate::player::*;
@@ -111,28 +112,53 @@ impl Game {
         // TODO: kill enemies above
 
         if real_block.block.is_empty() {
-            if self.player.is_big() {
+            if !self.player.is_big() {
+                real_block.spawn_particles(
+                    self.level.prototype.theme,
+                    (x, y),
+                    dbg!(&mut self.level.entities),
+                );
                 real_block.block = Block::default();
-                // TODO: spawn particles
             }
             return;
         }
+
         match real_block.block.get_contents() {
-            None => (),
             Some(Collectible::Coins(num)) => {
                 self.score.coins += 1;
                 if self.score.coins == 100 {
                     self.score.coins = 0;
                     self.score.lives += 1;
                 }
-                // TODO: spawn particle
+                // TODO: spawn particles
             },
             Some(Collectible::Mushroom) => {
-                // TODO: spawn entity
+                let entity = match self.player.variant {
+                    PlayerVariant::Big => {
+                        Entity::spawn(
+                            EntityType::Collectible(Collectible::Flower),
+                            (x, y - 1),
+                        )
+                    },
+                    _ => {
+                        Entity::spawn(
+                            EntityType::Collectible(Collectible::Mushroom),
+                            (x, y - 1),
+                        )
+                    },
+                };
+
+                self.level.entities.push(entity);
             },
             Some(Collectible::Star) => {
-                // TODO: spawn entity
+                let entity = Entity::spawn(
+                    EntityType::Collectible(Collectible::Star),
+                    (x, y - 1),
+                );
+
+                self.level.entities.push(entity);
             },
+            _ => (),
         }
 
         real_block.block.delete_item();
@@ -162,6 +188,26 @@ impl Game {
         }
     }
 
+    fn update_entities(&mut self, state: &mut SharedState) {
+        let len = self.level.entities.len();
+        for i in 0..len {
+            match self.level.entities[i].kind {
+                EntityType::Particle(particle) => {
+                    let mut body = self.level.entities[i].body;
+                    body.accelerate(vec2d!(0.0, 0.0));
+                    body.apply_movement_unchecked();
+                    self.level.entities[i].body = body;
+                },
+                _ => unimplemented!(),
+            }
+        }
+
+        self.level.entities.retain(|entity| {
+            !entity.body.out_of_bounds()
+            // TODO: check if dead
+        })
+    }
+
     pub fn update(&mut self, state: &mut SharedState) -> ActivityResult {
         if state.controller.was_key_pressed(Key::Escape) {
             self.state = match self.state {
@@ -178,6 +224,7 @@ impl Game {
             State::Running => {
                 self.update_player(state);
                 self.update_blocks(state);
+                self.update_entities(state);
             },
             State::LevelLoading(0) => {
                 self.state = State::Running;
@@ -234,7 +281,7 @@ impl Game {
         let lives_str = format!("LIVES: {}", self.score.lives);
         let coins_str = format!("COINS: {}", self.score.coins);
 
-        const MARGIN : i32 = 10;
+        const MARGIN: i32 = 10;
 
         let lives_text = text!(&lives_str);
         renderer

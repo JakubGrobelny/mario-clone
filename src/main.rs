@@ -2,6 +2,7 @@
 #![allow(unused)]
 
 extern crate num_traits;
+extern crate rand;
 extern crate sdl2;
 extern crate serde_json;
 #[macro_use]
@@ -11,7 +12,6 @@ extern crate num_derive;
 mod utility;
 #[macro_use]
 mod render;
-mod physics;
 mod background;
 mod block;
 mod controller;
@@ -24,6 +24,7 @@ mod interface;
 mod level;
 mod menu;
 mod movement;
+mod physics;
 mod player;
 mod resource;
 mod state;

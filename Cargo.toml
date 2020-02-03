@@ -13,3 +13,4 @@ serde = { version = "1.0.44", features = ["derive"] }
 vector2d = "2.2.0"
 num-traits = "0.2.11"
 num-derive = "0.3.0"
+rand = "0.7.3"
