@@ -30,7 +30,7 @@ pub enum PlayerVariant {
 impl Player {
     pub fn new(x: i32, y: i32) -> Player {
         let hitbox = Hitbox::new(x, y, PLAYER_WIDTH, PLAYER_HEIGHT);
-        let mass = 0.8;
+        let mass = 0.83;
 
         Player {
             body:    PhysicalBody::new(mass, hitbox),
@@ -39,10 +39,10 @@ impl Player {
     }
 
     pub fn accelerate(&mut self, controller: &Controller) {
-        const HORIZONTAL_ACCELERATION: f64 = 1.6;
-        const AIRBORNE_HANDICAP: f64 = 0.4;
-        const JUMP_ACCELERATION: f64 = -11.0;
-        const LONG_JUMP_MULT: f64 = 0.1;
+        const HORIZONTAL_ACCELERATION: f64 = 0.9;
+        const AIRBORNE_HANDICAP: f64 = 0.3;
+        const JUMP_ACCELERATION: f64 = -13.5;
+        const LONG_JUMP_MULT: f64 = 0.09;
         const SPRINT_MULT: f64 = 1.35;
         const SPEED_JUMP_BONUS: f64 = 0.02;
 
@@ -58,10 +58,13 @@ impl Player {
             x_accel *= SPRINT_MULT;
         }
 
-        let jumping = controller.is_key_active(Key::Up);
-        let y_accel = if jumping && self.body.speed_y() < 0.0 {
+        let jumped = controller.is_key_active_time_limited(Key::Up, 10);
+        let holding_jump = controller.is_key_active(Key::Up);
+
+        let y_accel = if holding_jump && self.body.speed_y() < 0.0 {
             self.body.speed_y() * LONG_JUMP_MULT
-        } else if self.body.grounded && jumping {
+        } else if self.body.grounded && jumped {
+            dbg!("Hello, there!");
             JUMP_ACCELERATION
         } else {
             0.0

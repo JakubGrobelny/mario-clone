@@ -82,7 +82,7 @@ const GRAVITY: f64 = 1.0;
 const AIR_DRAG: f64 = 0.045;
 const AIR_DRAG_VEC: Vector2D<f64> = vec2d!(AIR_DRAG, AIR_DRAG);
 
-const GROUND_DRAG: f64 = 0.15;
+const GROUND_DRAG: f64 = 0.10;
 const GROUND_DRAG_VEC: Vector2D<f64> = vec2d!(GROUND_DRAG, 0.0);
 
 impl Physics {

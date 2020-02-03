@@ -294,7 +294,7 @@ impl Drawable for Collectible {
                 res.entity_texture_info(TextureId::CollectibleCoin)
             },
             Collectible::Star => {
-                res.entity_texture_info(TextureId::CollectibleFlower)
+                res.entity_texture_info(TextureId::CollectibleStar)
             },
             Collectible::Mushroom => {
                 res.entity_texture_info(TextureId::CollectibleMushroom)

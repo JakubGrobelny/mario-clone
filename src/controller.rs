@@ -67,6 +67,11 @@ impl From<Keycode> for Key {
             Keycode::Return => Key::Enter,
             Keycode::Tab => Key::Tab,
             Keycode::LCtrl => Key::Ctrl,
+            Keycode::Space => Key::Up,
+            Keycode::A => Key::Left,
+            Keycode::D => Key::Right,
+            Keycode::W => Key::Up,
+            Keycode::S => Key::Down,
             _ => Key::Invalid,
         }
     }
@@ -103,9 +108,14 @@ impl From<&Controller> for Vector2D<f64> {
 
 impl ButtonState {
     fn update_with_event(&mut self, event: KeyEventType) {
-        match event {
-            KeyEventType::Up => *self = ButtonState::Inactive,
-            KeyEventType::Down => *self = ButtonState::Active(0),
+        match (*self, event) {
+            (_, KeyEventType::Up) => *self = ButtonState::Inactive,
+            (ButtonState::Inactive, KeyEventType::Down) => {
+                *self = ButtonState::Active(0)
+            },
+            (ButtonState::Active(time), KeyEventType::Down) => {
+                *self = ButtonState::Active(time)
+            },
         }
     }
 
@@ -149,6 +159,7 @@ impl Controller {
                     keycode: Some(code),
                     ..
                 } => {
+                    dbg!("Key down!");
                     let index = Key::from(*code) as usize;
                     self.keys[index].update_with_event(KeyEventType::Down);
                 },
@@ -184,9 +195,16 @@ impl Controller {
         &self.mouse
     }
 
-    pub fn is_key_active_timed(&self, key: Key, time: u8) -> bool {
+    fn is_key_active_timed(&self, key: Key, time: u8) -> bool {
         match self.keys[key as usize] {
             ButtonState::Active(t) if t >= time => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_key_active_time_limited(&self, key: Key, time: u8) -> bool {
+        match self.keys[key as usize] {
+            ButtonState::Active(t) if t <= time => true,
             _ => false,
         }
     }

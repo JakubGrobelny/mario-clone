@@ -153,6 +153,7 @@ impl Game {
     pub fn draw(&self, renderer: &mut Renderer, state: &mut SharedState) {
         renderer
             .draw(&self.level)
+            .tick(state.frame)
             .camera(self.camera)
             .show(&mut state.resources);
 
