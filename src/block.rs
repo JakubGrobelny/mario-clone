@@ -151,6 +151,10 @@ impl Block {
         self.kind
     }
 
+    pub fn set_kind(&mut self, kind: BlockType) {
+        self.kind = kind
+    }
+
     pub fn next_kind(self) -> Block {
         Block::from(self.kind.next())
     }

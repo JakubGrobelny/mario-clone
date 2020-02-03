@@ -30,8 +30,9 @@ pub struct LevelJSON {
     entities:   Vec<EntityPrototype>,
 }
 
+#[derive(Clone)]
 pub struct PlayableLevel {
-    prototype:  Level,
+    pub prototype:  Level,
     pub blocks: BlockArray<RealBlock>,
 }
 

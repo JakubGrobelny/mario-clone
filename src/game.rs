@@ -1,3 +1,4 @@
+use crate::block::*;
 use crate::controller::*;
 use crate::interface::*;
 use crate::level::*;
@@ -5,7 +6,6 @@ use crate::player::*;
 use crate::render::*;
 use crate::resource::*;
 use crate::state::*;
-use crate::block::*;
 
 use sdl2::pixels::Color;
 
@@ -36,23 +36,35 @@ const LOADING_SCREEN_TIME: u8 = FPS as u8 * 2;
 enum ButtonEffect {
     Resume,
     Menu,
+    Restart,
 }
 
 pub struct Score {
-    lives: u32,
-    coins: u32,
+    lives: u8,
+    coins: u8,
 }
+
+const BUMP_FALLOFF: u8 = 3;
+const BUMP_FORCE: u8 = BUMP_FALLOFF * 8;
 
 impl Game {
     fn new_level_loading_screen() -> State {
         State::LevelLoading(LOADING_SCREEN_TIME)
     }
 
+    fn restart(&mut self, state: &mut SharedState) {
+        self.player = Player::default();
+        self.player.stick_camera(&mut self.camera);
+        self.level = self.level_info.load_level(&state.resources);
+        self.score = Score::new();
+    }
+
     pub fn new(res: &ResourceManager) -> Game {
-        let player = Player::new(10, SCREEN_HEIGHT as i32 - 70);
+        let player = Player::default();
         let camera = Camera::new(player.rect().x(), player.rect().y());
         let buttons = ButtonColumnBuilder::new()
             .add(("RESUME", ButtonEffect::Resume))
+            .add(("RESTART", ButtonEffect::Restart))
             .add(("MENU", ButtonEffect::Menu))
             .build();
 
@@ -78,7 +90,12 @@ impl Game {
                 state.controller.clear_mouse();
                 ActivityResult::Active
             },
-            _ => ActivityResult::Active,
+            Some(ButtonEffect::Restart) => {
+                self.restart(state);
+                self.state = State::LevelLoading(LOADING_SCREEN_TIME);
+                ActivityResult::Active
+            },
+            None => ActivityResult::Active,
         }
     }
 
@@ -88,24 +105,53 @@ impl Game {
         self.player.stick_camera(&mut self.camera);
     }
 
-    fn update_blocks(&mut self, state: &mut SharedState) {
-        const BUMP_FORCE: u8 = 30;
-        for row in self.level.blocks.iter_mut() {
-            for block in row.iter_mut() {
-                block.state = match block.state {
-                    BlockState::Bumped => {
-                        // TODO: spawn coins etc.
-                        BlockState::Moving(20)
-                    },
-                    BlockState::Moving(n) => {
-                        if n == 0 {
-                            BlockState::Static
-                        } else {
-                            BlockState::Moving(n-2)
-                        }
-                    }
-                    state => state
+    fn handle_bump(&mut self, (x, y): (usize, usize), state: &mut SharedState) {
+        let real_block = &mut self.level.blocks[y][x];
+
+        if real_block.block.is_empty() {
+            if self.player.is_big() {
+                real_block.block = Block::default();
+                // TODO: spawn particles
+            }
+            return;
+        }
+        
+        match real_block.block.get_contents() {
+            None => (),
+            Some(Collectible::Coins(num)) => {
+                self.score.coins += 1;
+                if self.score.coins == 100 {
+                    self.score.coins = 0;
+                    self.score.lives += 1;
                 }
+            },
+            Some(Collectible::Mushroom) => {},
+            Some(Collectible::Star) => {},
+        }
+
+        real_block.block.delete_item();
+
+        if real_block.block.is_empty() {
+            real_block.block.set_kind(BlockType::QuestionMarkEmpty);
+        }
+    }
+
+    fn update_blocks(&mut self, state: &mut SharedState) {
+        for y in 0..LEVEL_HEIGHT {
+            for x in 0..LEVEL_WIDTH {
+                let new_state = match self.level.blocks[y][x].state {
+                    BlockState::Bumped => {
+                        self.handle_bump((x, y), state);
+                        BlockState::Moving(BUMP_FORCE)
+                    },
+                    BlockState::Moving(0) => BlockState::Static,
+                    BlockState::Moving(n) => {
+                        BlockState::Moving(n - BUMP_FALLOFF)
+                    },
+                    state => state,
+                };
+
+                self.level.blocks[y][x].state = new_state;
             }
         }
     }

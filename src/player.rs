@@ -22,10 +22,17 @@ const PLAYER_MASS: f64 = 1.0;
 pub const PLAYER_WIDTH: u32 = 64;
 pub const PLAYER_HEIGHT: u32 = 64;
 
+#[derive(PartialEq, Eq)]
 pub enum PlayerVariant {
     Small,
     Big,
     CanShoot,
+}
+
+impl Default for Player {
+    fn default() -> Player {
+        Player::new(10, SCREEN_HEIGHT as i32 - 70)
+    }
 }
 
 impl Player {
@@ -37,6 +44,10 @@ impl Player {
             body:    PhysicalBody::new(mass, hitbox),
             variant: PlayerVariant::Small,
         }
+    }
+
+    pub fn is_big(&self) -> bool {
+        self.variant != PlayerVariant::Small
     }
 
     pub fn accelerate(&mut self, controller: &Controller) {
