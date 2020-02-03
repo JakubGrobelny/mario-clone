@@ -9,13 +9,13 @@ use crate::texture_id::*;
 use crate::utility::*;
 
 use sdl2::pixels::Color;
-use sdl2::rect::{Rect, Point};
+use sdl2::rect::{Point, Rect};
 
 use vector2d::Vector2D;
 
 pub struct Player {
-    body:    PhysicalBody,
-    variant: PlayerVariant,
+    body:      PhysicalBody,
+    variant:   PlayerVariant,
 }
 
 const PLAYER_MASS: f64 = 1.0;
@@ -34,8 +34,8 @@ impl Player {
         let mass = 0.83;
 
         Player {
-            body:    PhysicalBody::new(mass, hitbox),
-            variant: PlayerVariant::Small,
+            body:      PhysicalBody::new(mass, hitbox),
+            variant:   PlayerVariant::Small,
         }
     }
 
@@ -95,18 +95,17 @@ impl Player {
 
 impl Drawable for Player {
     fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
-        const MOVEMENT_THRESHOLD: f64 = 0.2;
+        const MOVEMENT_THRESHOLD: f64 = 0.3;
         let player = data.object;
         let variant = if !player.body.grounded {
             TextureId::PlayerJumping
-        } else if player.body.speed_x().abs() > MOVEMENT_THRESHOLD {
-            TextureId::PlayerRunning
-        } else {
+        } else if player.body.is_still() {
             TextureId::PlayerStanding
+        } else {
+            TextureId::PlayerRunning
         };
 
-        // TODO: fix -- goes crazy when player touches a wall to his right
-        let flip = player.body.speed_x() > MOVEMENT_THRESHOLD;
+        let flip = player.body.x_direction() == XDirection::Right;
 
         let info = res.entity_texture_info(variant);
         let (x, y) = player.position();
@@ -121,14 +120,17 @@ impl Drawable for Player {
 
         let path = info.path.clone();
 
-        data.renderer.canvas.copy_ex(
-            &res.texture(&path),
-            src_region,
-            dest,
-            0.0,
-            Point::new(0,0),
-            flip,
-            false,
-        ).expect("Failed to draw the player!");
+        data.renderer
+            .canvas
+            .copy_ex(
+                &res.texture(&path),
+                src_region,
+                dest,
+                0.0,
+                Point::new(0, 0),
+                flip,
+                false,
+            )
+            .expect("Failed to draw the player!");
     }
 }

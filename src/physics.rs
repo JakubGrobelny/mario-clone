@@ -11,9 +11,10 @@ pub struct Physics {
 }
 
 pub struct PhysicalBody {
-    physics:      Physics,
-    pub hitbox:   Hitbox,
-    pub grounded: bool,
+    physics:       Physics,
+    pub hitbox:    Hitbox,
+    pub grounded:  bool,
+    pub direction: XDirection,
 }
 
 impl PhysicalBody {
@@ -22,7 +23,24 @@ impl PhysicalBody {
             physics: Physics::new(mass),
             hitbox,
             grounded: false,
+            direction: XDirection::Still,
         }
+    }
+
+    pub fn is_still_x(&self) -> bool {
+        self.physics.speed.x.abs() < 1.0
+    }
+
+    pub fn is_still_y(&self) -> bool {
+        self.physics.speed.y.abs() < 1.0
+    }
+
+    pub fn is_still(&self) -> bool {
+        self.is_still_x() && self.is_still_y()
+    }
+
+    pub fn x_direction(&self) -> XDirection {
+        self.direction
     }
 
     pub fn accelerate(&mut self, accel: Vector2D<f64>) {
@@ -60,6 +78,7 @@ impl PhysicalBody {
     pub fn stop_y(&mut self) {
         self.physics.speed.y = 0.0;
     }
+
     pub fn clear_speed(&mut self) {
         const CLEAR_THRESHOLD: f64 = 0.2;
         let speed = self.physics.speed;

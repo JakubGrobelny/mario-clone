@@ -194,6 +194,12 @@ impl PhysicalBody {
             self.grounded = false;
         }
 
+        if acceptable_speed.x >= 1.0 {
+            self.direction = XDirection::Right;
+        } else if acceptable_speed.x <= -1.0 {
+            self.direction = XDirection::Left;
+        }
+
         self.clear_speed();
     }
 }

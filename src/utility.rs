@@ -9,6 +9,13 @@ use vector2d::Vector2D;
 
 pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
+#[derive(Eq, PartialEq, Debug, Copy, Clone)]
+pub enum XDirection {
+    Left,
+    Right,
+    Still,
+}
+
 pub struct Frequency {
     times: u32,
     phases: u32,
