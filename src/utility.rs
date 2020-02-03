@@ -5,6 +5,8 @@ use std::path::PathBuf;
 
 use sdl2::rect::Rect;
 
+use vector2d::Vector2D;
+
 pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 pub struct Frequency {
@@ -56,4 +58,23 @@ macro_rules! rect {
     ($x:expr, $y:expr, $w:expr, $h: expr) => {
         sdl2::rect::Rect::new($x as i32, $y as i32, $w as u32, $h as u32)
     };
+}
+
+
+#[macro_export]
+macro_rules! vec2d {
+    ($x:expr, $y:expr) => {
+        Vector2D { x: $x, y: $y }
+    };
+}
+
+pub fn approx_eq(v0: Vector2D<f64>, v1: Vector2D<f64>) -> bool {
+    vec_map(&v0, |x| x.round()) == vec_map(&v1, |x| x.round())
+}
+
+pub fn vec_map<A, B>(vector: &Vector2D<A>, f: fn(A) -> B) -> Vector2D<B>
+where
+    A: Copy,
+{
+    vec2d!(f(vector.x), f(vector.y))
 }

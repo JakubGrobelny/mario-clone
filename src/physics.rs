@@ -2,13 +2,7 @@ extern crate vector2d;
 use vector2d::Vector2D;
 
 use crate::hitbox::*;
-
-#[macro_export]
-macro_rules! vec2d {
-    ($x:expr, $y:expr) => {
-        Vector2D { x: $x, y: $y }
-    };
-}
+use crate::utility::*;
 
 #[derive(Debug)]
 pub struct Physics {
@@ -107,11 +101,4 @@ impl Physics {
 
         self.speed += accel + grav_accel - drag;
     }
-}
-
-pub fn vec_map<A, B>(vector: &Vector2D<A>, f: fn(A) -> B) -> Vector2D<B>
-where
-    A: Copy,
-{
-    vec2d!(f(vector.x), f(vector.y))
 }

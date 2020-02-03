@@ -1,14 +1,15 @@
 use crate::controller::*;
 use crate::hitbox::*;
+use crate::level::*;
+use crate::movement::*;
 use crate::physics::*;
 use crate::render::*;
 use crate::resource::*;
+use crate::texture_id::*;
 use crate::utility::*;
-use crate::level::*;
-use crate::movement::*;
 
 use sdl2::pixels::Color;
-use sdl2::rect::Rect;
+use sdl2::rect::{Rect, Point};
 
 use vector2d::Vector2D;
 
@@ -18,8 +19,8 @@ pub struct Player {
 }
 
 const PLAYER_MASS: f64 = 1.0;
-pub const PLAYER_WIDTH: u32 = 40;
-pub const PLAYER_HEIGHT: u32 = 50;
+pub const PLAYER_WIDTH: u32 = 64;
+pub const PLAYER_HEIGHT: u32 = 64;
 
 pub enum PlayerVariant {
     Small,
@@ -49,7 +50,6 @@ impl Player {
         let sprinting = controller.is_key_active(Key::Sprint);
 
         let mut x_accel = HORIZONTAL_ACCELERATION * controller.x_acceleration();
-        
         if !self.body.grounded {
             x_accel *= AIRBORNE_HANDICAP;
         }
@@ -64,7 +64,6 @@ impl Player {
         let y_accel = if holding_jump && self.body.speed_y() < 0.0 {
             self.body.speed_y() * LONG_JUMP_MULT
         } else if self.body.grounded && jumped {
-            dbg!("Hello, there!");
             JUMP_ACCELERATION
         } else {
             0.0
@@ -87,5 +86,49 @@ impl Player {
         let x = self.body.hitbox.x() - SCREEN_WIDTH as i32 / 2;
         let y = self.body.hitbox.y() - SCREEN_HEIGHT as i32 / 2;
         cam.move_to((x, y));
+    }
+
+    pub fn position(&self) -> (i32, i32) {
+        self.body.hitbox.top_left().into()
+    }
+}
+
+impl Drawable for Player {
+    fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
+        const MOVEMENT_THRESHOLD: f64 = 0.2;
+        let player = data.object;
+        let variant = if !player.body.grounded {
+            TextureId::PlayerJumping
+        } else if player.body.speed_x().abs() > MOVEMENT_THRESHOLD {
+            TextureId::PlayerRunning
+        } else {
+            TextureId::PlayerStanding
+        };
+
+        // TODO: fix -- goes crazy when player touches a wall to his right
+        let flip = player.body.speed_x() > MOVEMENT_THRESHOLD;
+
+        let info = res.entity_texture_info(variant);
+        let (x, y) = player.position();
+        let tick = data.tick + player.body.speed_x().abs() as u32;
+        let sprite_x = info.frame_index(tick) * info.width;
+        let src_region = rect!(sprite_x, 0, info.width, info.height);
+
+        let (cam_x, cam_y) = data.camera.translate_coords((x, y));
+        let width = (info.width as f64 * data.scale) as u32;
+        let height = (info.height as f64 * data.scale) as u32;
+        let dest = rect!(cam_x, cam_y, width, height);
+
+        let path = info.path.clone();
+
+        data.renderer.canvas.copy_ex(
+            &res.texture(&path),
+            src_region,
+            dest,
+            0.0,
+            Point::new(0,0),
+            flip,
+            false,
+        ).expect("Failed to draw the player!");
     }
 }

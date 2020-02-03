@@ -172,6 +172,22 @@
                 "frames": 4,
                 "speed": 8
             }
+        },
+        "PlayerStanding": {
+            "path": "entity/player/small/standing",
+            "themes": false
+        },
+        "PlayerRunning": {
+            "path": "entity/player/small/running",
+            "themes": false,
+            "animation": {
+                "frames": 3,
+                "speed": 8
+            }
+        },
+        "PlayerJumping": {
+            "path": "entity/player/small/jumping",
+            "themes": false
         }
     }
 }

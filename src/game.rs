@@ -157,6 +157,12 @@ impl Game {
             .camera(self.camera)
             .show(&mut state.resources);
 
+        renderer
+            .draw(&self.player)
+            .tick(state.frame)
+            .camera(self.camera)
+            .show(&mut state.resources);
+
         match self.state {
             State::Paused => {
                 renderer.fill(Color::RGBA(0, 0, 0, 128));
@@ -166,10 +172,6 @@ impl Game {
                 self.draw_loading_screen(renderer, state);
             },
             State::Running => {
-                renderer
-                    .draw(&self.player.rect())
-                    .camera(self.camera)
-                    .show(&mut state.resources);
             },
         }
     }

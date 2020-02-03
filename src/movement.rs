@@ -88,10 +88,6 @@ impl PhysicalBody {
         player: bool,
         range: &Surroundings,
     ) -> Vector2D<f64> {
-        fn approx_eq(v0: Vector2D<f64>, v1: Vector2D<f64>) -> bool {
-            vec_map(&v0, |x| x.round()) == vec_map(&v1, |x| x.round())
-        }
-
         const MAX_ITER: usize = 32;
         let mut min = vec2d!(0.0, 0.0);
         let mut max = self.speed();

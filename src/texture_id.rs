@@ -6,4 +6,7 @@ pub enum TextureId {
     CollectibleMushroom,
     CollectibleStar,
     CollectibleFlower,
+    PlayerStanding,
+    PlayerRunning,
+    PlayerJumping,
 }

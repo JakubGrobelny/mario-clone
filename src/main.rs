@@ -11,7 +11,6 @@ extern crate num_derive;
 mod utility;
 #[macro_use]
 mod render;
-#[macro_use]
 mod physics;
 mod background;
 mod block;

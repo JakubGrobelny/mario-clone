@@ -159,7 +159,6 @@ impl Controller {
                     keycode: Some(code),
                     ..
                 } => {
-                    dbg!("Key down!");
                     let index = Key::from(*code) as usize;
                     self.keys[index].update_with_event(KeyEventType::Down);
                 },
