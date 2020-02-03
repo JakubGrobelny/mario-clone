@@ -11,6 +11,8 @@ use sdl2::render::Texture;
 
 use serde::{Deserialize, Serialize};
 
+use vector2d::Vector2D;
+
 use std::rc::Rc;
 
 #[derive(Debug)]
@@ -40,17 +42,29 @@ pub enum EntityType {
 #[derive(Serialize, Deserialize)]
 #[derive(Copy, Clone)]
 pub enum Particle {
-    Coin,
+    Coin { lifetime: u8 },
     BlockFragment { kind: BlockType, theme: LevelTheme },
 }
 
 impl Particle {
+    pub fn new_coin() -> Self {
+        const LIFETIME: u8 = 25;
+        Particle::Coin { lifetime: LIFETIME }
+    }
+
     pub fn new_fragment(kind: BlockType, theme: LevelTheme) -> Self {
         Particle::BlockFragment { kind, theme }
     }
 }
 
 impl EntityPrototype {
+    pub fn new(kind: EntityType, pos: (i32, i32)) -> EntityPrototype {
+        EntityPrototype {
+            kind,
+            position: pos,
+        }
+    }
+
     pub fn hitbox(self) -> Hitbox {
         let (x, y) = self.position;
         match self.kind {
@@ -88,15 +102,6 @@ impl From<&Entity> for EntityPrototype {
     }
 }
 
-impl EntityPrototype {
-    pub fn new(kind: EntityType, pos: (i32, i32)) -> EntityPrototype {
-        EntityPrototype {
-            kind,
-            position: pos,
-        }
-    }
-}
-
 impl Entity {
     pub fn new(kind: EntityType, pos: (i32, i32)) -> Entity {
         Entity::from(EntityPrototype::new(kind, pos))
@@ -107,17 +112,44 @@ impl Entity {
         let y = (y as i32) * BLOCK_SIZE as i32;
         Self::new(kind, (x, y))
     }
+
+    pub fn spawn_with_speed(
+        kind: EntityType,
+        pos: (usize, usize),
+        speed: Vector2D<f64>,
+    ) -> Entity {
+        let mut entity = Self::spawn(kind, pos);
+        entity.body.accelerate(speed);
+        entity
+    }
+
+    pub fn spawn_coin(pos: (usize, usize)) -> Entity {
+        Self::spawn_with_speed(
+            EntityType::Particle(Particle::new_coin()),
+            pos,
+            vec2d!(0.0, -15.0),
+        )
+    }
+
+    pub fn is_dead(&self) -> bool {
+        match self.kind {
+            EntityType::Particle(Particle::Coin { lifetime }) => lifetime == 0,
+            _ => false,
+        }
+    }
 }
 
 impl Drawable for Particle {
     fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
         match data.object {
-            Particle::Coin => unimplemented!(),
+            Particle::Coin { .. } => {
+                let coin = Collectible::Coins(1);
+                pass_draw!(data, &coin).show(res);
+            },
             Particle::BlockFragment { kind, theme } => {
                 let info = res.block_texture_info(*kind);
 
                 const SIZE: u32 = 13;
-                
                 let (x, y) = data.position;
                 let x = x + BLOCK_SIZE as i32 / 2 - (SIZE / 2) as i32;
                 let y = y + BLOCK_SIZE as i32 / 2 - (SIZE / 2) as i32;

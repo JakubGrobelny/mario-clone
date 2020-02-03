@@ -4,6 +4,9 @@ use crate::entity::*;
 use crate::hitbox::*;
 use crate::render::*;
 use crate::resource::*;
+use crate::texture_id::*;
+
+use rand::Rng;
 
 use sdl2::pixels::Color;
 
@@ -35,6 +38,14 @@ pub struct PlayableLevel {
     pub prototype: Level,
     pub blocks:    BlockArray<RealBlock>,
     pub entities:  Vec<Entity>,
+    pub clouds:    Vec<Cloud>,
+}
+
+#[derive(Clone)]
+#[derive(Debug)]
+pub struct Cloud {
+    pub position: (i32, i32),
+    pub is_small: bool,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -138,6 +149,33 @@ impl From<LevelJSON> for Level {
 
 impl From<Level> for PlayableLevel {
     fn from(lvl: Level) -> PlayableLevel {
+        fn generate_clouds() -> Vec<Cloud> {
+            const STEP: i32 = 200;
+            let mut x: i32 = 0;
+            let mut clouds: Vec<Cloud> = vec![];
+            let mut rng = rand::thread_rng();
+
+            while x < LEVEL_WIDTH as i32 * BLOCK_SIZE as i32 {
+                let step = rng.gen_range(0, 256);
+                x += STEP + step;
+
+                let max_y = LEVEL_HEIGHT as i32 * BLOCK_SIZE as i32 * 2 / 3;
+                let y = rng.gen_range(0, max_y);
+                let is_small: bool = rand::random();
+
+                if !is_small {
+                    x += STEP;
+                }
+
+                let cloud = Cloud {
+                    position: (x, y),
+                    is_small,
+                };
+
+                clouds.push(cloud);
+            }
+            clouds
+        }
         let mut blocks: BlockArray<RealBlock> = Level::default_blocks();
 
         for (y, row) in lvl.blocks.iter().enumerate() {
@@ -146,17 +184,15 @@ impl From<Level> for PlayableLevel {
             }
         }
 
-        let entities = lvl
-            .entities
-            .iter()
-            .copied()
-            .map(Entity::from)
-            .collect();
+        let entities = lvl.entities.iter().copied().map(Entity::from).collect();
+
+        let clouds = generate_clouds();
 
         PlayableLevel {
             blocks,
             prototype: lvl,
             entities,
+            clouds,
         }
     }
 }
@@ -240,9 +276,11 @@ impl From<LevelTheme> for Color {
 
 impl Drawable for Level {
     fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
-        let color = Color::from(data.object.theme);
-        data.renderer.canvas.set_draw_color(color);
-        data.renderer.canvas.clear();
+        if data.mode != DrawMode::Game {
+            let color = Color::from(data.object.theme);
+            data.renderer.canvas.set_draw_color(color);
+            data.renderer.canvas.clear();
+        }
 
         for (y, row) in data.object.background.iter().enumerate() {
             for (x, &bg) in row.iter().enumerate() {
@@ -277,6 +315,17 @@ impl Drawable for Level {
 
 impl Drawable for PlayableLevel {
     fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
+        let color = Color::from(data.object.prototype.theme);
+        data.renderer.canvas.set_draw_color(color);
+        data.renderer.canvas.clear();
+
+        for cloud in data.object.clouds.iter() {
+            pass_draw!(data, cloud)
+                .scale(5.0)
+                .camera(data.camera.cloud_camera())
+                .show(res);
+        }
+
         pass_draw!(data, &data.object.prototype).show(res);
 
         for (y, row) in data.object.blocks.iter().enumerate() {
@@ -301,5 +350,37 @@ impl Drawable for PlayableLevel {
         for entity in data.object.entities.iter() {
             pass_draw!(data, entity).show(res);
         }
+    }
+}
+
+impl Drawable for Cloud {
+    fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
+        let texture_id = if data.object.is_small {
+            TextureId::SmallCloud
+        } else {
+            TextureId::BigCloud
+        };
+
+        let info = res.entity_texture_info(texture_id);
+        let (x, y) = data.object.position;
+
+        let width = (info.width as f64 * data.scale) as u32;
+        let height = (info.height as f64 * data.scale) as u32;
+
+        if !data.camera.in_view(rect!(x, y, width, height)) {
+            return;
+        }
+
+        let (cam_x, cam_y) = data.camera.translate_coords((x, y));
+        let dest = rect!(cam_x, cam_y, width, height);
+
+        let path = info.path.clone();
+
+        let src_region = rect!(0, 0, info.width, info.height);
+
+        data.renderer
+            .canvas
+            .copy(&res.texture(&path), src_region, dest)
+            .expect("Failed to draw a cloud! :(");
     }
 }

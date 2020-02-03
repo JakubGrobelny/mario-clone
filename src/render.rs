@@ -336,6 +336,13 @@ impl Camera {
         Camera { x, y }
     }
 
+    pub fn cloud_camera(self) -> Camera {
+        Camera {
+            x: self.x / 2,
+            y: self.y
+        }
+    }
+
     pub fn move_to(&mut self, pos: (i32, i32)) {
         self.x = 0;
         self.y = 0;

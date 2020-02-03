@@ -200,6 +200,18 @@
                 -6,
                 0
             ]
+        },
+        "SmallCloud": {
+            "path": "background/cloud_small",
+            "themes": false,
+            "width": 31,
+            "height": 16
+        },
+        "BigCloud": {
+            "path": "/background/cloud_big",
+            "themes": false,
+            "width": 63,
+            "height": 16
         }
     }
 }

@@ -116,7 +116,7 @@ impl Game {
                 real_block.spawn_particles(
                     self.level.prototype.theme,
                     (x, y),
-                    dbg!(&mut self.level.entities),
+                    &mut self.level.entities,
                 );
                 real_block.block = Block::default();
             }
@@ -130,7 +130,9 @@ impl Game {
                     self.score.coins = 0;
                     self.score.lives += 1;
                 }
-                // TODO: spawn particles
+
+                let coin = Entity::spawn_coin((x, y - 1));
+                self.level.entities.push(coin);
             },
             Some(Collectible::Mushroom) => {
                 let entity = match self.player.variant {
@@ -188,24 +190,50 @@ impl Game {
         }
     }
 
+    fn too_far(player: &Player, entity: &Entity) -> bool {
+        const MARGIN: i32 = BLOCK_SIZE as i32 * 5 + SCREEN_WIDTH as i32 / 2;
+        let (player_x, _) = player.position();
+        let (entity_x, _) = entity.body.position();
+        (entity_x - player_x).abs() > MARGIN
+    }
+
     fn update_entities(&mut self, state: &mut SharedState) {
         let len = self.level.entities.len();
         for i in 0..len {
+            if Self::too_far(&self.player, &self.level.entities[i]) {
+                continue;
+            }
+
             match self.level.entities[i].kind {
                 EntityType::Particle(particle) => {
                     let mut body = self.level.entities[i].body;
                     body.accelerate(vec2d!(0.0, 0.0));
                     body.apply_movement_unchecked();
                     self.level.entities[i].body = body;
+
+                    let updated = match particle {
+                        Particle::Coin { lifetime } => {
+                            if lifetime > 0 {
+                                Particle::Coin {
+                                    lifetime: lifetime - 1,
+                                }
+                            } else {
+                                particle
+                            }
+                        },
+                        _ => particle,
+                    };
+
+                    self.level.entities[i].kind =
+                        EntityType::Particle(updated);
                 },
                 _ => unimplemented!(),
             }
         }
 
-        self.level.entities.retain(|entity| {
-            !entity.body.out_of_bounds()
-            // TODO: check if dead
-        })
+        self.level
+            .entities
+            .retain(|entity| !entity.body.out_of_bounds() && !entity.is_dead())
     }
 
     pub fn update(&mut self, state: &mut SharedState) -> ActivityResult {

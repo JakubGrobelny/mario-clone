@@ -9,4 +9,6 @@ pub enum TextureId {
     PlayerStanding,
     PlayerRunning,
     PlayerJumping,
+    SmallCloud,
+    BigCloud,
 }
