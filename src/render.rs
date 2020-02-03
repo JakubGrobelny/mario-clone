@@ -281,7 +281,7 @@ macro_rules! text {
 
 #[macro_export]
 macro_rules! text_right {
-    ($test:expr) => {
+    ($text:expr) => {
         TextBuilder::new($text)
             .alignment(TextAlignment::Right)
             .build()

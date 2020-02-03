@@ -152,7 +152,7 @@ impl Block {
     }
 
     pub fn set_kind(&mut self, kind: BlockType) {
-        self.kind = kind
+        self.kind = kind;
     }
 
     pub fn next_kind(self) -> Block {

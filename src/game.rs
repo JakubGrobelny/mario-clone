@@ -108,6 +108,8 @@ impl Game {
     fn handle_bump(&mut self, (x, y): (usize, usize), state: &mut SharedState) {
         let real_block = &mut self.level.blocks[y][x];
 
+        // TODO: kill enemies above
+
         if real_block.block.is_empty() {
             if self.player.is_big() {
                 real_block.block = Block::default();
@@ -115,7 +117,6 @@ impl Game {
             }
             return;
         }
-        
         match real_block.block.get_contents() {
             None => (),
             Some(Collectible::Coins(num)) => {
@@ -124,9 +125,14 @@ impl Game {
                     self.score.coins = 0;
                     self.score.lives += 1;
                 }
+                // TODO: spawn particle
             },
-            Some(Collectible::Mushroom) => {},
-            Some(Collectible::Star) => {},
+            Some(Collectible::Mushroom) => {
+                // TODO: spawn entity
+            },
+            Some(Collectible::Star) => {
+                // TODO: spawn entity
+            },
         }
 
         real_block.block.delete_item();
@@ -224,6 +230,27 @@ impl Game {
             .show(&mut state.resources);
     }
 
+    pub fn draw_ui(&self, renderer: &mut Renderer, state: &mut SharedState) {
+        let lives_str = format!("LIVES: {}", self.score.lives);
+        let coins_str = format!("COINS: {}", self.score.coins);
+
+        const MARGIN : i32 = 10;
+
+        let lives_text = text!(&lives_str);
+        renderer
+            .draw(&lives_text)
+            .position((MARGIN, MARGIN))
+            .scale(0.25)
+            .show(&mut state.resources);
+
+        let coins_text = text_right!(&coins_str);
+        renderer
+            .draw(&coins_text)
+            .position((SCREEN_WIDTH as i32 - MARGIN, MARGIN))
+            .scale(0.25)
+            .show(&mut state.resources);
+    }
+
     pub fn draw(&self, renderer: &mut Renderer, state: &mut SharedState) {
         renderer
             .draw(&self.level)
@@ -246,7 +273,7 @@ impl Game {
             State::LevelLoading(..) => {
                 self.draw_loading_screen(renderer, state);
             },
-            _ => (),
+            State::Running => self.draw_ui(renderer, state),
         }
     }
 }
