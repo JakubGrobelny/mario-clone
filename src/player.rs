@@ -19,7 +19,7 @@ pub struct Player {
 }
 
 const PLAYER_MASS: f64 = 1.0;
-pub const PLAYER_WIDTH: u32 = 64;
+pub const PLAYER_WIDTH: u32 = 48;
 pub const PLAYER_HEIGHT: u32 = 64;
 
 #[derive(PartialEq, Eq)]
@@ -120,7 +120,11 @@ impl Drawable for Player {
         let flip = player.body.x_direction() == XDirection::Right;
 
         let info = res.entity_texture_info(variant);
+        
         let (x, y) = player.position();
+        let (off_x, off_y) = info.hitbox_offset();
+        let (x, y) = (x + off_x, y + off_y);
+
         let tick = data.tick + player.body.speed_x().abs() as u32;
         let sprite_x = info.frame_index(tick) * info.width;
         let src_region = rect!(sprite_x, 0, info.width, info.height);

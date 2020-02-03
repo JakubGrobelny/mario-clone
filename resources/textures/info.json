@@ -175,7 +175,11 @@
         },
         "PlayerStanding": {
             "path": "entity/player/small/standing",
-            "themes": false
+            "themes": false,
+            "hitbox_offset": [
+                -6,
+                0
+            ]
         },
         "PlayerRunning": {
             "path": "entity/player/small/running",
@@ -183,11 +187,19 @@
             "animation": {
                 "frames": 3,
                 "speed": 8
-            }
+            },
+            "hitbox_offset": [
+                -6,
+                0
+            ]
         },
         "PlayerJumping": {
             "path": "entity/player/small/jumping",
-            "themes": false
+            "themes": false,
+            "hitbox_offset": [
+                -6,
+                0
+            ]
         }
     }
 }

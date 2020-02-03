@@ -41,6 +41,8 @@ pub struct TextureInfo {
     pub animation: TextureAnimation,
     #[serde(default = "default_themed")]
     pub themed:    bool,
+    #[serde(default = "default_hitbox_offset")]
+    pub hitbox_offset: (i32, i32),
 }
 
 #[derive(Deserialize)]
@@ -269,6 +271,10 @@ impl TextureInfo {
             0
         }
     }
+
+    pub fn hitbox_offset(&self) -> (i32, i32) {
+        self.hitbox_offset
+    }
 }
 
 // for serde_json default values purposes
@@ -289,4 +295,8 @@ fn default_animation() -> TextureAnimation {
         frames: 1,
         speed:  1,
     }
+}
+
+fn default_hitbox_offset() -> (i32, i32) {
+    (0, 0)
 }

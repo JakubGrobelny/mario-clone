@@ -10,6 +10,10 @@ use serde::{Deserialize, Serialize};
 
 use std::rc::Rc;
 
+// pub struct Entity {
+    // 
+// }
+
 #[derive(Serialize, Deserialize)]
 #[derive(Copy, Clone)]
 pub struct EntityPrototype {

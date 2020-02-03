@@ -59,6 +59,10 @@ impl PhysicalBody {
         let mut hitbox = self.hitbox;
         hitbox.offset(speed.x, speed.y);
 
+        if hitbox.x() < 0 {
+            return true;
+        }
+
         for y in range.from_y..=range.to_y {
             for x in range.from_x..=range.to_x {
                 if let Some(block_hitbox) = world.block_hitbox(x, y) {
