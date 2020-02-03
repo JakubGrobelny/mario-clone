@@ -235,7 +235,8 @@ impl Drawable for ThemedBlock {
 
         let (src_region, dest, path) = {
             let info = res.block_texture_info(block);
-            let (x, y) = data.position;
+            
+            let (x, y) = data.position;            
             let width = (info.width as f64 * data.scale) as u32;
             let height = (info.height as f64 * data.scale) as u32;
             if !data.camera.in_view(rect!(x, y, width, height)) {

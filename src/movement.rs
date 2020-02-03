@@ -116,10 +116,13 @@ impl PhysicalBody {
     }
 
     fn bump_blocks(&self, world: &mut PlayableLevel, range: &Surroundings) {
-        let mut hitbox = self.hitbox;
+        let mut head = self
+            .hitbox
+            .top_left()
+            .offset(self.hitbox.width() as i32 / 2, 0);
         let movement = vec_map(&self.speed(), |x| x.round() as i32);
-        hitbox.offset(movement.x, movement.y);
-        
+        head = head.offset(movement.x, movement.y);
+
         for y in range.from_y..=range.to_y {
             for x in range.from_x..=range.to_x {
                 if !world.blocks[y][x].block.is_bumpable() {
@@ -127,11 +130,7 @@ impl PhysicalBody {
                 }
 
                 if let Some(block_hitbox) = world.block_hitbox(x, y) {
-                    if block_hitbox.center().y() > self.hitbox.center().y() {
-                        continue;
-                    }
-
-                    if hitbox.collides(&block_hitbox) {
+                    if block_hitbox.contains_point(head) {
                         world.blocks[y][x].state = BlockState::Bumped;
                     }
                 }

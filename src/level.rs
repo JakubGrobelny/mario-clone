@@ -245,16 +245,18 @@ impl Drawable for Level {
             }
         }
 
-        for (y, row) in data.object.blocks.iter().enumerate() {
-            for (x, &block) in row.iter().enumerate() {
-                let x = x as i32 * BLOCK_SIZE as i32;
-                let y = y as i32 * BLOCK_SIZE as i32;
-                let block = ThemedBlock {
-                    block,
-                    theme: data.object.theme,
-                };
-
-                pass_draw!(data, &block).position((x, y)).show(res);
+        if data.mode != DrawMode::Game {
+            for (y, row) in data.object.blocks.iter().enumerate() {
+                for (x, &block) in row.iter().enumerate() {
+                    let x = x as i32 * BLOCK_SIZE as i32;
+                    let y = y as i32 * BLOCK_SIZE as i32;
+                    let block = ThemedBlock {
+                        block,
+                        theme: data.object.theme,
+                    };
+    
+                    pass_draw!(data, &block).position((x, y)).show(res);
+                }
             }
         }
 
@@ -265,6 +267,24 @@ impl Drawable for Level {
 impl Drawable for PlayableLevel {
     fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
         pass_draw!(data, &data.object.prototype).show(res);
-        // TODO: draw the rest of the level
+
+        for (y, row) in data.object.blocks.iter().enumerate() {
+            for (x, &block) in row.iter().enumerate() {
+                let bump_amount = match block.state {
+                    BlockState::Moving(amount) => amount as i32,
+                    _ => 0,
+                };
+
+                let x = x as i32 * BLOCK_SIZE as i32;
+                let y = y as i32 * BLOCK_SIZE as i32 - bump_amount;
+
+                let block = ThemedBlock {
+                    block: block.block,
+                    theme: data.object.prototype.theme,
+                };
+
+                pass_draw!(data, &block).position((x, y)).show(res);
+            }
+        }
     }
 }

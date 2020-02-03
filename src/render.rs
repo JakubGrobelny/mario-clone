@@ -59,6 +59,7 @@ pub enum DrawMode {
     Standard,
     Editor,
     EditorSelection,
+    Game,
 }
 
 #[derive(Clone, Copy)]

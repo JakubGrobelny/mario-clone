@@ -5,6 +5,7 @@ use crate::player::*;
 use crate::render::*;
 use crate::resource::*;
 use crate::state::*;
+use crate::block::*;
 
 use sdl2::pixels::Color;
 
@@ -81,6 +82,34 @@ impl Game {
         }
     }
 
+    fn update_player(&mut self, state: &mut SharedState) {
+        self.player.accelerate(&state.controller);
+        self.player.apply_movement(&mut self.level);
+        self.player.stick_camera(&mut self.camera);
+    }
+
+    fn update_blocks(&mut self, state: &mut SharedState) {
+        const BUMP_FORCE: u8 = 30;
+        for row in self.level.blocks.iter_mut() {
+            for block in row.iter_mut() {
+                block.state = match block.state {
+                    BlockState::Bumped => {
+                        // TODO: spawn coins etc.
+                        BlockState::Moving(20)
+                    },
+                    BlockState::Moving(n) => {
+                        if n == 0 {
+                            BlockState::Static
+                        } else {
+                            BlockState::Moving(n-2)
+                        }
+                    }
+                    state => state
+                }
+            }
+        }
+    }
+
     pub fn update(&mut self, state: &mut SharedState) -> ActivityResult {
         if state.controller.was_key_pressed(Key::Escape) {
             self.state = match self.state {
@@ -95,9 +124,8 @@ impl Game {
                 return self.update_menu(state);
             },
             State::Running => {
-                self.player.accelerate(&state.controller);
-                self.player.apply_movement(&mut self.level);
-                self.player.stick_camera(&mut self.camera);
+                self.update_player(state);
+                self.update_blocks(state);
             },
             State::LevelLoading(0) => {
                 self.state = State::Running;
@@ -155,6 +183,7 @@ impl Game {
             .draw(&self.level)
             .tick(state.frame)
             .camera(self.camera)
+            .mode(DrawMode::Game)
             .show(&mut state.resources);
 
         renderer
@@ -171,8 +200,7 @@ impl Game {
             State::LevelLoading(..) => {
                 self.draw_loading_screen(renderer, state);
             },
-            State::Running => {
-            },
+            _ => (),
         }
     }
 }

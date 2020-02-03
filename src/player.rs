@@ -14,8 +14,8 @@ use sdl2::rect::{Point, Rect};
 use vector2d::Vector2D;
 
 pub struct Player {
-    body:      PhysicalBody,
-    variant:   PlayerVariant,
+    body:    PhysicalBody,
+    variant: PlayerVariant,
 }
 
 const PLAYER_MASS: f64 = 1.0;
@@ -34,8 +34,8 @@ impl Player {
         let mass = 0.83;
 
         Player {
-            body:      PhysicalBody::new(mass, hitbox),
-            variant:   PlayerVariant::Small,
+            body:    PhysicalBody::new(mass, hitbox),
+            variant: PlayerVariant::Small,
         }
     }
 
@@ -69,7 +69,8 @@ impl Player {
             0.0
         };
 
-        let boosted_y_accel = y_accel + y_accel * x_accel * SPEED_JUMP_BONUS;
+        let boosted_y_accel =
+            y_accel + y_accel * x_accel.abs() * SPEED_JUMP_BONUS;
         let accel = vec2d!(x_accel, boosted_y_accel);
         self.body.accelerate(accel);
     }
