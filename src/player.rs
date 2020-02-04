@@ -7,6 +7,7 @@ use crate::render::*;
 use crate::resource::*;
 use crate::texture_id::*;
 use crate::utility::*;
+use crate::block::*;
 
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
@@ -21,6 +22,8 @@ pub struct Player {
 
 const PLAYER_MASS: f64 = 1.0;
 
+pub const INVINCIBILITY_TIME: u16 = FPS as u16 * 4;
+
 pub const PLAYER_WIDTH: u32 = 48;
 pub const PLAYER_HEIGHT: u32 = 64;
 
@@ -28,6 +31,7 @@ pub const BIG_PLAYER_WIDTH: u32 = 64;
 pub const BIG_PLAYER_HEIGHT: u32 = 128;
 
 #[derive(PartialEq, Eq)]
+#[derive(Copy, Clone)]
 #[derive(Debug)]
 pub enum PlayerVariant {
     Small,
@@ -37,7 +41,7 @@ pub enum PlayerVariant {
 
 impl Default for Player {
     fn default() -> Player {
-        Player::new(10, SCREEN_HEIGHT as i32 - 70)
+        Player::new(10, LEVEL_HEIGHT as i32 * BLOCK_SIZE as i32 - 256)
     }
 }
 
@@ -45,6 +49,8 @@ impl Player {
     pub fn new(x: i32, y: i32) -> Player {
         let hitbox = Hitbox::new(x, y, PLAYER_WIDTH, PLAYER_HEIGHT);
         let mass = 0.83;
+
+        hitbox;
 
         Player {
             body:          PhysicalBody::new(mass, hitbox),
@@ -188,5 +194,14 @@ impl Drawable for Player {
                 false,
             )
             .expect("Failed to draw the player!");
+
+        if player.invincibility > 0 {
+            let progress =
+                (player.invincibility as f64) / INVINCIBILITY_TIME as f64;
+
+            let width = (64.0 * progress) as u32;
+            let bar = rect!(cam_x, cam_y, width, 10);
+            data.renderer.draw(&bar).show(res);
+        }
     }
 }

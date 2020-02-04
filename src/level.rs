@@ -230,7 +230,15 @@ impl Level {
         const DEFAULT_THEME: LevelTheme = LevelTheme::Day;
         let blocks = Level::init_blocks();
         let background = Level::default_blocks();
-        let entities = Vec::new();
+
+        const FLAG_HEIGHT: i32 = 640;
+        const FLAG_POS: (i32, i32) = (
+            BLOCK_SIZE as i32 * 185,
+            (LEVEL_HEIGHT - 2) as i32 * BLOCK_SIZE as i32 - FLAG_HEIGHT,
+        );
+
+        let flag_pole = EntityPrototype::new(EntityType::EndFlag, FLAG_POS);
+        let entities = vec![flag_pole];
 
         Level {
             blocks,

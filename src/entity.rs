@@ -5,6 +5,7 @@ use crate::level::*;
 use crate::physics::*;
 use crate::render::*;
 use crate::resource::*;
+use crate::texture_id::*;
 
 use sdl2::rect::Rect;
 use sdl2::render::Texture;
@@ -24,6 +25,7 @@ pub struct Entity {
 
 #[derive(Serialize, Deserialize)]
 #[derive(Copy, Clone)]
+#[derive(Debug)]
 pub struct EntityPrototype {
     pub kind:     EntityType,
     pub position: (i32, i32),
@@ -36,6 +38,7 @@ pub enum EntityType {
     Collectible(Collectible),
     Enemy(EnemyType),
     Particle(Particle),
+    EndFlag,
     Dead,
 }
 
@@ -47,6 +50,8 @@ pub enum Particle {
     BlockFragment { kind: BlockType, theme: LevelTheme },
 }
 
+pub const STAR_ACCEL: f64 = 0.9;
+pub const STAR_JUMP: f64 = -20.0;
 pub const MUSHROOM_ACCEL: f64 = 0.7;
 
 impl Particle {
@@ -104,11 +109,14 @@ impl EntityPrototype {
             },
             EntityType::Particle(particle) => Hitbox::new(x, y, 1, 1),
             EntityType::Dead => Hitbox::new(-100, -100, 1, 1),
+            EntityType::EndFlag => {
+                Hitbox::new(x, 0, 128, LEVEL_HEIGHT as u32 * BLOCK_SIZE)
+            },
         }
     }
 
     pub fn mass(self) -> f64 {
-        1.0
+        0.6
     }
 }
 
@@ -164,7 +172,7 @@ impl Entity {
         Self::spawn_with_speed(
             EntityType::Particle(Particle::new_coin()),
             pos,
-            vec2d!(0.0, -15.0),
+            vec2d!(0.0, -10.0),
         )
     }
 
@@ -233,7 +241,27 @@ impl Drawable for EntityPrototype {
                     .position(data.object.position)
                     .show(res);
             },
-            _ => unimplemented!(),
+            EntityType::EndFlag => {
+                let (x, y) = data.object.position;
+                let info = res.entity_texture_info(TextureId::Flag);
+                if !data.camera.in_view(rect!(x, y, info.width, info.height)) {
+                    return;
+                }
+
+                let (off_x, off_y) = info.hitbox_offset();
+                let (x, y) = (x + off_x, y + off_y);
+
+                let src_region = rect!(0, 0, info.width, info.height);
+                let (cam_x, cam_y) = data.camera.translate_coords((x, y));
+                let dest = rect!(cam_x, cam_y, info.width, info.height);
+
+                let path = info.path.clone();
+                data.renderer
+                    .canvas
+                    .copy(&res.texture(&path), src_region, dest)
+                    .expect("Failed to draw the end flag!");
+            },
+            _ => (),
         }
     }
 }

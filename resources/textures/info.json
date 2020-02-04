@@ -253,6 +253,16 @@
                 0,
                 -15
             ]
+        },
+        "Flag": {
+            "path": "entity/flag",
+            "themes": false,
+            "height": 640,
+            "width": 128,
+            "hitbox_offset": [
+                0,
+                512
+            ]
         }
     }
 }

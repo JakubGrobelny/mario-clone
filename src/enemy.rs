@@ -26,7 +26,11 @@ pub enum EnemyType {
      * HammerBro, */
 }
 
+pub const ENEMY_KILL_BOUNCE : f64 = -10.0;
+
 const MAX_EDITOR_SELECTION: u8 = EnemyType::Koopa as u8;
+
+pub const GOOMBA_ACCELERATION: f64 = 0.4;
 
 impl EnemyType {
     pub fn prev(self) -> Self {

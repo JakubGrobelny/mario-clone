@@ -16,4 +16,5 @@ pub enum TextureId {
     BigCloud,
     EnemyGoomba,
     EnemyKoopa,
+    Flag,
 }

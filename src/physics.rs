@@ -23,7 +23,6 @@ pub struct PhysicalBody {
     pub direction: XDirection,
 }
 
-
 impl PhysicalBody {
     pub fn new(mass: f64, hitbox: Hitbox) -> Self {
         PhysicalBody {
@@ -115,7 +114,7 @@ impl PhysicalBody {
                 },
                 XDirection::Right => {
                     self.accelerate(vec2d!(-accel, 0.0));
-                }
+                },
             }
         } else {
             self.continue_accelerating(accel);

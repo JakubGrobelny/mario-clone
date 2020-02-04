@@ -1,5 +1,6 @@
 use crate::block::*;
 use crate::controller::*;
+use crate::enemy::*;
 use crate::entity::*;
 use crate::hitbox::*;
 use crate::interface::*;
@@ -32,6 +33,8 @@ enum State {
     Paused,
     LevelLoading(u8),
     Running,
+    GameFinished,
+    GameOver,
 }
 
 const LOADING_SCREEN_TIME: u8 = FPS as u8 * 2;
@@ -42,6 +45,7 @@ enum ButtonEffect {
     Restart,
 }
 
+#[derive(Clone, Copy)]
 pub struct Score {
     lives: u8,
     coins: u8,
@@ -60,6 +64,18 @@ impl Game {
         self.player.stick_camera(&mut self.camera);
         self.level = self.level_info.load_level(&state.resources);
         self.score = Score::new();
+    }
+
+    fn next_level(&mut self, state: &mut SharedState) {
+        let variant = self.player.variant;
+        self.player = Player::default();
+        self.player.variant = variant;
+        self.player.stick_camera(&mut self.camera);
+
+        match self.level_info.next_level(&state.resources) {
+            Some(level) => self.level = level,
+            None => self.state = State::GameFinished,
+        }
     }
 
     pub fn new(res: &ResourceManager) -> Game {
@@ -111,9 +127,39 @@ impl Game {
         }
     }
 
+    fn bump_entities(
+        &mut self,
+        (x, y): (usize, usize),
+        state: &mut SharedState,
+    ) {
+        let entities_num = self.level.entities.len();
+        let pos = (
+            (x * BLOCK_SIZE as usize) as i32,
+            ((y - 1) * BLOCK_SIZE as usize) as i32,
+        );
+        let bump_hitbox = rect!((pos.0), (pos.1), BLOCK_SIZE, BLOCK_SIZE);
+        for i in 0..entities_num {
+            if self.level.entities[i].body.hitbox.collides(&bump_hitbox) {
+                match self.level.entities[i].kind {
+                    EntityType::Enemy(..) => {
+                        // TODO: add particle
+                        self.level.entities[i] = Entity::dead();
+                    },
+                    EntityType::Collectible(Collectible::Coins(..)) => (),
+                    EntityType::Collectible(..) => {
+                        let mut body = self.level.entities[i].body;
+                        body.accelerate(vec2d!(0.0, -10.0));
+                        self.level.entities[i].body = body;
+                    },
+                    _ => (),
+                }
+            }
+        }
+    }
+
     fn handle_bump(&mut self, (x, y): (usize, usize), state: &mut SharedState) {
+        self.bump_entities((x, y), state);
         let real_block = &mut self.level.blocks[y][x];
-        // TODO: kill enemies above
 
         if real_block.block.is_empty() {
             if self.player.is_big() {
@@ -220,7 +266,69 @@ impl Game {
                     body.apply_movement(&mut self.level, false);
                     self.level.entities[i].body = body;
                 },
-                _ => (), // TODO: implement
+                EntityType::Collectible(Collectible::Star) => {
+                    let mut body = self.level.entities[i].body;
+                    if body.hitbox.collides(&self.player.body.hitbox) {
+                        self.player.invincibility = INVINCIBILITY_TIME;
+                        self.level.entities[i] = Entity::dead();
+                        continue;
+                    }
+
+                    let accel = if body.grounded {
+                        vec2d!(STAR_ACCEL, STAR_JUMP)
+                    } else {
+                        vec2d!(STAR_ACCEL, 0.0)
+                    };
+
+                    body.accelerate(accel);
+                    body.accelerate_or_bounce(0.0, &self.level);
+
+                    body.apply_movement(&mut self.level, false);
+                    self.level.entities[i].body = body;
+                },
+                EntityType::Enemy(EnemyType::Goomba) => {
+                    let mut body = self.level.entities[i].body;
+                    if body.hitbox.collides(&self.player.body.hitbox) {
+                        if self.player.body.speed_y() > 0.0
+                            || self.player.invincibility > 0
+                        {
+                            self.level.entities[i] = Entity::dead();
+                            self.player.body.accelerate(vec2d!(
+                                0.0,
+                                ENEMY_KILL_BOUNCE - self.player.body.speed_y()
+                            ));
+                            // TODO: spawn particle
+                            continue;
+                        } else {
+                            // TODO: display death animation
+                            if self.score.lives <= 1 {
+                                self.state = State::GameOver;
+                                return;
+                            } else {
+                                let prev_score = self.score;
+                                self.restart(state);
+                                self.score = prev_score;
+                                self.score.lives -= 1;
+                                self.state =
+                                    State::LevelLoading(LOADING_SCREEN_TIME);
+                                return;
+                            }
+                        }
+                    }
+
+                    body.accelerate_or_bounce(GOOMBA_ACCELERATION, &self.level);
+                    body.apply_movement(&mut self.level, false);
+                    self.level.entities[i].body = body;
+                },
+                EntityType::EndFlag => {
+                    let hitbox = self.level.entities[i].body.hitbox;
+                    if hitbox.collides(&self.player.body.hitbox) {
+                        self.state = State::LevelLoading(LOADING_SCREEN_TIME);
+                        self.next_level(state);
+                        return;
+                    }
+                },
+                _ => (),
             }
         }
 
@@ -252,6 +360,11 @@ impl Game {
             },
             State::LevelLoading(timer) => {
                 self.state = State::LevelLoading(timer - 1);
+            },
+            State::GameFinished | State::GameOver => {
+                if state.controller.was_key_pressed(Key::Enter) {
+                    return ActivityResult::Exited;
+                }
             },
         }
 
@@ -341,6 +454,30 @@ impl Game {
                 self.draw_loading_screen(renderer, state);
             },
             State::Running => self.draw_ui(renderer, state),
+            State::GameFinished => {
+                renderer.clear(Color::RGB(0, 0, 0));
+                let text =
+                    centered_text!("CONGRATULATIONS, YOU FINISHED THE GAME!");
+                renderer
+                    .draw(&text)
+                    .position((
+                        SCREEN_WIDTH as i32 / 2,
+                        SCREEN_HEIGHT as i32 / 2,
+                    ))
+                    .scale(0.2)
+                    .show(&mut state.resources);
+            },
+            State::GameOver => {
+                renderer.clear(Color::RGB(0, 0, 0));
+                let text = centered_text!("GAME OVER");
+                renderer
+                    .draw(&text)
+                    .position((
+                        SCREEN_WIDTH as i32 / 2,
+                        SCREEN_HEIGHT as i32 / 2,
+                    ))
+                    .show(&mut state.resources);
+            },
         }
     }
 }
@@ -361,6 +498,18 @@ impl LevelInfo {
         }
 
         LevelInfo { list, current: 0 }
+    }
+
+    pub fn next_level(
+        &mut self,
+        res: &ResourceManager,
+    ) -> Option<PlayableLevel> {
+        self.current += 1;
+        if self.current >= self.list.len() {
+            None
+        } else {
+            Some(self.load_level(res))
+        }
     }
 
     pub fn load_level(&self, res: &ResourceManager) -> PlayableLevel {
