@@ -212,6 +212,25 @@
             "themes": false,
             "width": 63,
             "height": 16
+        },
+        "BigPlayerStanding": {
+            "path": "entity/player/big/standing",
+            "themes": false,
+            "height": 128
+        },
+        "BigPlayerRunning": {
+            "path": "entity/player/big/running",
+            "themes": false,
+            "animation": {
+                "frames": 3,
+                "speed": 8
+            },
+            "height": 128
+        },
+        "BigPlayerJumping": {
+            "path": "entity/player/big/jumping",
+            "themes": false,
+            "height": 128
         }
     }
 }

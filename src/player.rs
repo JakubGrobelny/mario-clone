@@ -14,15 +14,21 @@ use sdl2::rect::{Point, Rect};
 use vector2d::Vector2D;
 
 pub struct Player {
-    body:    PhysicalBody,
-    pub variant: PlayerVariant,
+    pub body:          PhysicalBody,
+    pub variant:       PlayerVariant,
+    pub invincibility: u16,
 }
 
 const PLAYER_MASS: f64 = 1.0;
+
 pub const PLAYER_WIDTH: u32 = 48;
 pub const PLAYER_HEIGHT: u32 = 64;
 
+pub const BIG_PLAYER_WIDTH: u32 = 64;
+pub const BIG_PLAYER_HEIGHT: u32 = 128;
+
 #[derive(PartialEq, Eq)]
+#[derive(Debug)]
 pub enum PlayerVariant {
     Small,
     Big,
@@ -41,9 +47,28 @@ impl Player {
         let mass = 0.83;
 
         Player {
-            body:    PhysicalBody::new(mass, hitbox),
-            variant: PlayerVariant::Small,
+            body:          PhysicalBody::new(mass, hitbox),
+            variant:       PlayerVariant::Small,
+            invincibility: 0,
         }
+    }
+
+    pub fn grow(&mut self) {
+        const HEIGHT_DIFF: u32 = BIG_PLAYER_HEIGHT - PLAYER_HEIGHT;
+        const WIDTH_DIFF: u32 = (BIG_PLAYER_WIDTH - PLAYER_WIDTH) / 2;
+
+        assert_eq!(self.variant, PlayerVariant::Small);
+        let old_hitbox = self.body.hitbox;
+
+        let new_hitbox = Hitbox::new(
+            old_hitbox.x() - WIDTH_DIFF as i32,
+            old_hitbox.y() - HEIGHT_DIFF as i32,
+            BIG_PLAYER_WIDTH,
+            BIG_PLAYER_HEIGHT,
+        );
+
+        self.body.hitbox = new_hitbox;
+        self.variant = PlayerVariant::Big;
     }
 
     pub fn is_big(&self) -> bool {
@@ -103,24 +128,39 @@ impl Player {
     pub fn position(&self) -> (i32, i32) {
         self.body.hitbox.top_left().into()
     }
+
+    pub fn texture_id(&self) -> TextureId {
+        if !self.body.grounded {
+            match self.variant {
+                PlayerVariant::Small => TextureId::PlayerJumping,
+                PlayerVariant::Big => TextureId::BigPlayerJumping,
+                PlayerVariant::CanShoot => unimplemented!(),
+            }
+        } else if self.body.is_still() {
+            match self.variant {
+                PlayerVariant::Small => TextureId::PlayerStanding,
+                PlayerVariant::Big => TextureId::BigPlayerStanding,
+                PlayerVariant::CanShoot => unimplemented!(),
+            }
+        } else {
+            match self.variant {
+                PlayerVariant::Small => TextureId::PlayerRunning,
+                PlayerVariant::Big => TextureId::BigPlayerRunning,
+                PlayerVariant::CanShoot => unimplemented!(),
+            }
+        }
+    }
 }
 
 impl Drawable for Player {
     fn show(data: DrawCall<Self>, res: &mut ResourceManager) {
         const MOVEMENT_THRESHOLD: f64 = 0.3;
         let player = data.object;
-        let variant = if !player.body.grounded {
-            TextureId::PlayerJumping
-        } else if player.body.is_still() {
-            TextureId::PlayerStanding
-        } else {
-            TextureId::PlayerRunning
-        };
+        let variant = player.texture_id();
 
         let flip = player.body.x_direction() == XDirection::Right;
 
         let info = res.entity_texture_info(variant);
-        
         let (x, y) = player.position();
         let (off_x, off_y) = info.hitbox_offset();
         let (x, y) = (x + off_x, y + off_y);

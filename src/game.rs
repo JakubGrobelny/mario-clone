@@ -1,12 +1,14 @@
 use crate::block::*;
 use crate::controller::*;
 use crate::entity::*;
+use crate::hitbox::*;
 use crate::interface::*;
 use crate::level::*;
 use crate::player::*;
 use crate::render::*;
 use crate::resource::*;
 use crate::state::*;
+use crate::utility::*;
 
 use sdl2::pixels::Color;
 
@@ -104,15 +106,17 @@ impl Game {
         self.player.accelerate(&state.controller);
         self.player.apply_movement(&mut self.level);
         self.player.stick_camera(&mut self.camera);
+        if self.player.invincibility > 0 {
+            self.player.invincibility -= 1;
+        }
     }
 
     fn handle_bump(&mut self, (x, y): (usize, usize), state: &mut SharedState) {
         let real_block = &mut self.level.blocks[y][x];
 
         // TODO: kill enemies above
-
         if real_block.block.is_empty() {
-            if !self.player.is_big() {
+            if self.player.is_big() {
                 real_block.spawn_particles(
                     self.level.prototype.theme,
                     (x, y),
@@ -206,26 +210,21 @@ impl Game {
 
             match self.level.entities[i].kind {
                 EntityType::Particle(particle) => {
+                    particle.update(i, &mut self.level);
+                },
+                EntityType::Collectible(Collectible::Flower) => {
+                    unimplemented!();
+                },
+                EntityType::Collectible(Collectible::Mushroom) => {
                     let mut body = self.level.entities[i].body;
-                    body.accelerate(vec2d!(0.0, 0.0));
-                    body.apply_movement_unchecked();
+                    if body.hitbox.collides(&self.player.body.hitbox) {
+                        self.player.grow();
+                        self.level.entities[i] = Entity::dead();
+                        continue;
+                    }
+                    body.accelerate_or_bounce(MUSHROOM_ACCEL, &self.level);
+                    body.apply_movement(&mut self.level, false);
                     self.level.entities[i].body = body;
-
-                    let updated = match particle {
-                        Particle::Coin { lifetime } => {
-                            if lifetime > 0 {
-                                Particle::Coin {
-                                    lifetime: lifetime - 1,
-                                }
-                            } else {
-                                particle
-                            }
-                        },
-                        _ => particle,
-                    };
-
-                    self.level.entities[i].kind =
-                        EntityType::Particle(updated);
                 },
                 _ => unimplemented!(),
             }

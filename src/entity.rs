@@ -36,6 +36,7 @@ pub enum EntityType {
     Collectible(Collectible),
     Enemy(EnemyType),
     Particle(Particle),
+    Dead,
 }
 
 #[derive(Debug)]
@@ -46,6 +47,8 @@ pub enum Particle {
     BlockFragment { kind: BlockType, theme: LevelTheme },
 }
 
+pub const MUSHROOM_ACCEL : f64 = 0.7;
+
 impl Particle {
     pub fn new_coin() -> Self {
         const LIFETIME: u8 = 25;
@@ -54,6 +57,28 @@ impl Particle {
 
     pub fn new_fragment(kind: BlockType, theme: LevelTheme) -> Self {
         Particle::BlockFragment { kind, theme }
+    }
+
+    pub fn update(self, i: usize, world: &mut PlayableLevel) {
+        let mut body = world.entities[i].body;
+        body.accelerate(vec2d!(0.0, 0.0));
+        body.apply_movement_unchecked();
+        world.entities[i].body = body;
+
+        let updated = match self {
+            Particle::Coin { lifetime } => {
+                if lifetime > 0 {
+                    Particle::Coin {
+                        lifetime: lifetime - 1,
+                    }
+                } else {
+                    self
+                }
+            },
+            particle => particle,
+        };
+
+        world.entities[i].kind = EntityType::Particle(updated);
     }
 }
 
@@ -75,6 +100,9 @@ impl EntityPrototype {
                 unimplemented!();
             },
             EntityType::Particle(particle) => Hitbox::new(x, y, 1, 1),
+            EntityType::Dead => {
+                Hitbox::new(-100, -100, 1, 1)
+            }
         }
     }
 
@@ -107,6 +135,15 @@ impl Entity {
         Entity::from(EntityPrototype::new(kind, pos))
     }
 
+    pub fn dead() -> Entity {
+        let body = PhysicalBody::new(1.0, Hitbox::new(-100, -100, 1, 1));
+        
+        Entity {
+            kind: EntityType::Dead,
+            body
+        }
+    }
+
     pub fn spawn(kind: EntityType, (x, y): (usize, usize)) -> Entity {
         let x = x as i32 * BLOCK_SIZE as i32;
         let y = (y as i32) * BLOCK_SIZE as i32;
@@ -133,6 +170,7 @@ impl Entity {
 
     pub fn is_dead(&self) -> bool {
         match self.kind {
+            EntityType::Dead => true,
             EntityType::Particle(Particle::Coin { lifetime }) => lifetime == 0,
             _ => false,
         }

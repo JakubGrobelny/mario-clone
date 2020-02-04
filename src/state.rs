@@ -33,7 +33,7 @@ pub struct TextInput<'a> {
 }
 
 pub enum Activity {
-    Game(Game),
+    Game(Box<Game>),
     Editor(Editor),
     FileInputScreen,
     MainMenu(MainMenu),
@@ -91,7 +91,7 @@ impl TextInput<'_> {
 
 impl Activity {
     pub fn new_game(resources: &ResourceManager) -> Activity {
-        Activity::Game(Game::new(resources))
+        Activity::Game(Box::new(Game::new(resources)))
     }
 
     pub fn new_editor(resources: &ResourceManager, name: &str) -> Activity {

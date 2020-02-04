@@ -4,6 +4,7 @@ use vector2d::Vector2D;
 use crate::block::*;
 use crate::hitbox::*;
 use crate::level::*;
+use crate::movement::*;
 use crate::utility::*;
 
 #[derive(Debug)]
@@ -21,6 +22,7 @@ pub struct PhysicalBody {
     pub grounded:  bool,
     pub direction: XDirection,
 }
+
 
 impl PhysicalBody {
     pub fn new(mass: f64, hitbox: Hitbox) -> Self {
@@ -70,6 +72,22 @@ impl PhysicalBody {
         self.hitbox.offset(x, y);
     }
 
+    pub fn faces_wall(
+        &mut self,
+        dir: XDirection,
+        world: &PlayableLevel,
+    ) -> bool {
+        let surroundings = Self::surroundings(self.hitbox);
+
+        let movement = match dir {
+            XDirection::Still => vec2d!(0.0, 0.0),
+            XDirection::Left => vec2d!(-1.0, 0.0),
+            XDirection::Right => vec2d!(0.0, 1.0),
+        };
+
+        self.would_collide(world, movement, &surroundings)
+    }
+
     pub fn speed(&self) -> Vector2D<f64> {
         self.physics.speed
     }
@@ -80,6 +98,36 @@ impl PhysicalBody {
 
     pub fn speed_x(&self) -> f64 {
         self.physics.speed.x
+    }
+
+    pub fn accelerate_or_bounce(&mut self, accel: f64, world: &PlayableLevel) {
+        if self.is_still() {
+            match self.direction {
+                XDirection::Still => {
+                    if rand::random() {
+                        self.accelerate(vec2d!(accel, 0.0));
+                    } else {
+                        self.accelerate(vec2d!(-accel, 0.0));
+                    }
+                },
+                XDirection::Left => {
+                    self.accelerate(vec2d!(accel, 0.0));
+                },
+                XDirection::Right => {
+                    self.accelerate(vec2d!(-accel, 0.0));
+                }
+            }
+        } else {
+            self.continue_accelerating(accel);
+        }
+    }
+
+    pub fn continue_accelerating(&mut self, accel: f64) {
+        match self.direction {
+            XDirection::Left => self.accelerate(vec2d!(-accel, 0.0)),
+            XDirection::Right => self.accelerate(vec2d!(accel, 0.0)),
+            _ => (),
+        }
     }
 
     pub fn position(&self) -> (i32, i32) {

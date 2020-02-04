@@ -9,7 +9,7 @@ use vector2d::Vector2D;
 const CHECK_DISTANCE: usize = 4;
 
 #[derive(Debug)]
-struct Surroundings {
+pub struct Surroundings {
     from_x: usize,
     from_y: usize,
     to_x:   usize,
@@ -17,7 +17,7 @@ struct Surroundings {
 }
 
 impl PhysicalBody {
-    fn surroundings(hitbox: Hitbox) -> Surroundings {
+    pub fn surroundings(hitbox: Hitbox) -> Surroundings {
         let block_x = hitbox.center().x as usize / BLOCK_SIZE as usize;
         let block_y = hitbox.center().y as usize / BLOCK_SIZE as usize;
 
@@ -49,7 +49,7 @@ impl PhysicalBody {
         }
     }
 
-    fn would_collide(
+    pub fn would_collide(
         &self,
         world: &PlayableLevel,
         mov: Vector2D<f64>,
