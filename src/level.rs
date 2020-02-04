@@ -1,5 +1,6 @@
 use crate::background::*;
 use crate::block::*;
+use crate::enemy::*;
 use crate::entity::*;
 use crate::hitbox::*;
 use crate::render::*;
@@ -262,6 +263,27 @@ impl Level {
     pub fn remove_block_contents(&mut self, (x, y): (usize, usize)) {
         self.blocks[y][x].delete_item();
     }
+
+    pub fn insert_entity(&mut self, entity: EntityPrototype) {
+        self.entities.push(entity);
+    }
+
+    pub fn remove_entity(&mut self, pos: (i32, i32)) {
+        self.entities.retain(|entity| entity.position != pos);
+    }
+
+    pub fn get_entity(&mut self, pos: (i32, i32)) -> EnemyType {
+        self.entities
+            .iter()
+            .find(|entity| entity.position == pos)
+            .and_then(|entity| {
+                match entity.kind {
+                    EntityType::Enemy(enemy) => Some(enemy),
+                    _ => None,
+                }
+            })
+            .unwrap_or(EnemyType::Goomba)
+    }
 }
 
 impl From<LevelTheme> for Color {
@@ -310,6 +332,11 @@ impl Drawable for Level {
         }
 
         // TODO: draw entity prototypes if mode is editor
+        if data.mode != DrawMode::Game {
+            for entity in data.object.entities.iter() {
+                pass_draw!(data, entity).show(res);
+            }
+        }
     }
 }
 

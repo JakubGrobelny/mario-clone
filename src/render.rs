@@ -1,6 +1,7 @@
 use crate::block::*;
 use crate::level::*;
 use crate::resource::*;
+use crate::utility::*;
 
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
@@ -60,6 +61,7 @@ pub enum DrawMode {
     Editor,
     EditorSelection,
     Game,
+    EntityDirection(XDirection)
 }
 
 #[derive(Clone, Copy)]

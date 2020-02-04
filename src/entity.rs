@@ -25,8 +25,8 @@ pub struct Entity {
 #[derive(Serialize, Deserialize)]
 #[derive(Copy, Clone)]
 pub struct EntityPrototype {
-    kind:     EntityType,
-    position: (i32, i32),
+    pub kind:     EntityType,
+    pub position: (i32, i32),
 }
 
 #[derive(Debug)]
@@ -47,7 +47,7 @@ pub enum Particle {
     BlockFragment { kind: BlockType, theme: LevelTheme },
 }
 
-pub const MUSHROOM_ACCEL : f64 = 0.7;
+pub const MUSHROOM_ACCEL: f64 = 0.7;
 
 impl Particle {
     pub fn new_coin() -> Self {
@@ -96,13 +96,14 @@ impl EntityPrototype {
             EntityType::Collectible(..) => {
                 Hitbox::new(x, y, BLOCK_SIZE, BLOCK_SIZE)
             },
-            EntityType::Enemy(..) => {
-                unimplemented!();
+            EntityType::Enemy(enemy) => {
+                match enemy {
+                    EnemyType::Goomba => Hitbox::new(x, y, 64, 64),
+                    EnemyType::Koopa => Hitbox::new(x, y, 48, 81),
+                }
             },
             EntityType::Particle(particle) => Hitbox::new(x, y, 1, 1),
-            EntityType::Dead => {
-                Hitbox::new(-100, -100, 1, 1)
-            }
+            EntityType::Dead => Hitbox::new(-100, -100, 1, 1),
         }
     }
 
@@ -137,10 +138,9 @@ impl Entity {
 
     pub fn dead() -> Entity {
         let body = PhysicalBody::new(1.0, Hitbox::new(-100, -100, 1, 1));
-        
         Entity {
             kind: EntityType::Dead,
-            body
+            body,
         }
     }
 
@@ -228,6 +228,11 @@ impl Drawable for EntityPrototype {
                     .position(data.object.position)
                     .show(res);
             },
+            EntityType::Enemy(enemy) => {
+                pass_draw!(data, &enemy)
+                    .position(data.object.position)
+                    .show(res);
+            },
             _ => unimplemented!(),
         }
     }
@@ -238,6 +243,7 @@ impl Drawable for Entity {
         let prototype = EntityPrototype::from(data.object);
         pass_draw!(data, &prototype)
             .position(data.object.body.position())
+            .mode(DrawMode::EntityDirection(data.object.body.x_direction()))
             .show(res);
     }
 }

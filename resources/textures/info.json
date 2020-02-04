@@ -231,6 +231,28 @@
             "path": "entity/player/big/jumping",
             "themes": false,
             "height": 128
+        },
+        "EnemyGoomba": {
+            "path": "entity/enemy/goomba",
+            "themes": false,
+            "animation": {
+                "frames": 2,
+                "speed": 3
+            }
+        },
+        "EnemyKoopa": {
+            "path": "entity/enemy/koopa",
+            "themes": false,
+            "width": 48,
+            "height": 96,
+            "animation": {
+                "frames": 2,
+                "speed": 3
+            },
+            "hitbox_offset": [
+                0,
+                -15
+            ]
         }
     }
 }

@@ -113,8 +113,8 @@ impl Game {
 
     fn handle_bump(&mut self, (x, y): (usize, usize), state: &mut SharedState) {
         let real_block = &mut self.level.blocks[y][x];
-
         // TODO: kill enemies above
+
         if real_block.block.is_empty() {
             if self.player.is_big() {
                 real_block.spawn_particles(
@@ -139,20 +139,10 @@ impl Game {
                 self.level.entities.push(coin);
             },
             Some(Collectible::Mushroom) => {
-                let entity = match self.player.variant {
-                    PlayerVariant::Big => {
-                        Entity::spawn(
-                            EntityType::Collectible(Collectible::Flower),
-                            (x, y - 1),
-                        )
-                    },
-                    _ => {
-                        Entity::spawn(
-                            EntityType::Collectible(Collectible::Mushroom),
-                            (x, y - 1),
-                        )
-                    },
-                };
+                let entity = Entity::spawn(
+                    EntityType::Collectible(Collectible::Mushroom),
+                    (x, y - 1),
+                );
 
                 self.level.entities.push(entity);
             },
@@ -218,7 +208,11 @@ impl Game {
                 EntityType::Collectible(Collectible::Mushroom) => {
                     let mut body = self.level.entities[i].body;
                     if body.hitbox.collides(&self.player.body.hitbox) {
-                        self.player.grow();
+                        if self.player.is_big() {
+                            self.score.lives += 1;
+                        } else {
+                            self.player.grow();
+                        }
                         self.level.entities[i] = Entity::dead();
                         continue;
                     }
@@ -226,7 +220,7 @@ impl Game {
                     body.apply_movement(&mut self.level, false);
                     self.level.entities[i].body = body;
                 },
-                _ => unimplemented!(),
+                _ => (), // TODO: implement
             }
         }
 
@@ -286,7 +280,6 @@ impl Game {
         let progress_bar = rect!(0, 0, SCREEN_WIDTH - progress, 10);
         renderer.draw(&progress_bar).show(&mut state.resources);
 
-        // TODO: display the actual coin icon
         let score_str =
             format!("Lives: {} Coins: {}", self.score.lives, self.score.coins);
         let score_text = centered_text!(&score_str);

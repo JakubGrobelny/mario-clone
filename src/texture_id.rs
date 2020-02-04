@@ -14,4 +14,6 @@ pub enum TextureId {
     BigPlayerJumping,
     SmallCloud,
     BigCloud,
+    EnemyGoomba,
+    EnemyKoopa,
 }

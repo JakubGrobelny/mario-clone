@@ -1,6 +1,8 @@
 use crate::background::*;
 use crate::block::*;
 use crate::controller::*;
+use crate::enemy::*;
+use crate::entity::*;
 use crate::interface::*;
 use crate::level::*;
 use crate::render::*;
@@ -25,6 +27,7 @@ enum Selection {
     Block(Block),
     Background(BackgroundElement),
     Collectible(Collectible),
+    Enemy(EnemyType),
 }
 
 enum ButtonEffect {
@@ -140,6 +143,15 @@ impl Editor {
                     self.level.fill_block(pos, collectible);
                 }
             },
+            Selection::Enemy(enemy) => {
+                let pos = (
+                    (pos.0 * BLOCK_SIZE as usize) as i32,
+                    (pos.1 * BLOCK_SIZE as usize) as i32,
+                );
+                let entity =
+                    EntityPrototype::new(EntityType::Enemy(enemy), pos);
+                self.level.insert_entity(entity);
+            },
         }
     }
 
@@ -153,6 +165,13 @@ impl Editor {
             },
             Selection::Collectible(..) => {
                 self.level.remove_block_contents(pos);
+            },
+            Selection::Enemy(..) => {
+                let pos = (
+                    (pos.0 * BLOCK_SIZE as usize) as i32,
+                    (pos.1 * BLOCK_SIZE as usize) as i32,
+                );
+                self.level.remove_entity(pos);
             },
         }
     }
@@ -170,6 +189,13 @@ impl Editor {
                 } else {
                     self.selected
                 }
+            },
+            Selection::Enemy(..) => {
+                let pos = (
+                    (pos.0 * BLOCK_SIZE as usize) as i32,
+                    (pos.1 * BLOCK_SIZE as usize) as i32,
+                );
+                Selection::Enemy(self.level.get_entity(pos))
             },
         };
 
@@ -251,6 +277,11 @@ impl Editor {
                 call.draw_with(&collectible, renderer)
                     .show(&mut state.resources);
             },
+            Selection::Enemy(enemy) => {
+                let entity =
+                    EntityPrototype::new(EntityType::Enemy(enemy), pos);
+                call.draw_with(&entity, renderer).show(&mut state.resources);
+            },
         }
     }
 
@@ -284,9 +315,8 @@ impl Selection {
             Selection::Background(..) => {
                 Selection::Collectible(Collectible::Coins(1))
             },
-            Selection::Collectible(..) => {
-                Selection::Block(Block::default_visible())
-            },
+            Selection::Collectible(..) => Selection::Enemy(EnemyType::Goomba),
+            Selection::Enemy(..) => Selection::Block(Block::default_visible()),
         };
 
         *self = new
@@ -305,6 +335,7 @@ impl Selection {
             Selection::Block(block) => Selection::Block(block.next_kind()),
             Selection::Background(bg) => Selection::Background(bg.next()),
             Selection::Collectible(c) => Selection::Collectible(c.next()),
+            Selection::Enemy(enemy) => Selection::Enemy(enemy.next()),
         }
     }
 
@@ -313,6 +344,7 @@ impl Selection {
             Selection::Block(block) => Selection::Block(block.prev_kind()),
             Selection::Background(bg) => Selection::Background(bg.prev()),
             Selection::Collectible(c) => Selection::Collectible(c.prev()),
+            Selection::Enemy(enemy) => Selection::Enemy(enemy.prev()),
         }
     }
 }
